@@ -1,0 +1,123 @@
+package es.csic.cnb.server;
+
+import es.csic.cnb.util.Util;
+import gwtupload.server.UploadAction;
+import gwtupload.server.exceptions.UploadActionException;
+import gwtupload.shared.UConsts;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Hashtable;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.fileupload.FileItem;
+
+public class UploadServlet extends UploadAction {
+
+  private static final long serialVersionUID = 1L;
+
+  private Hashtable<String, String> receivedContentTypes = new Hashtable<String, String>();
+  /**
+   * Maintain a list with received files and their content types.
+   */
+  private Hashtable<String, File> receivedFiles = new Hashtable<String, File>();
+
+  private ModelChecker check = new ModelChecker();
+
+  /**
+   * Override executeAction to save the received files in a custom place
+   * and delete this items from session.
+   */
+  @Override
+  public String executeAction(HttpServletRequest request, List<FileItem> sessionFiles) throws UploadActionException {
+    String response = "";
+
+    // Crear directorio
+    File dir = null;
+    for (FileItem item : sessionFiles) {
+      if (item.isFormField()) {
+        // Crear directorio
+        if ("SessionId".equals(item.getFieldName())) {
+          dir = new File(Util.USERDIR_MODELS, item.getString());
+          if (!dir.exists()) {
+            dir.mkdirs();
+//            try {
+//              Runtime.getRuntime().exec("chmod go+w " + dir.getPath());
+//            } catch (IOException e) {
+//              e.printStackTrace();
+//            }
+          }
+        }
+      }
+    }
+
+    if (dir == null) {
+      // TODO Log
+    }
+    else {
+      for (FileItem item : sessionFiles) {
+        if (false == item.isFormField()) {
+          try {
+            /// Create a temporary file placed in the default system temp folder
+            File file = File.createTempFile("model-", ".xml", dir);
+            item.write(file);
+
+            /// Save a list with the received files
+            receivedFiles.put(item.getFieldName(), file);
+            receivedContentTypes.put(item.getFieldName(), item.getContentType());
+
+            /// Send a customized message to the client.
+            response = file.getAbsolutePath();
+
+            if (!check.isValid(file)) {
+              response = "ERROR";
+            }
+            System.out.println(check.getTraza());
+
+          } catch (Exception e) {
+            throw new UploadActionException(e);
+          }
+        }
+      }
+    }
+
+    /// Remove files from session because we have a copy of them
+    removeSessionFileItems(request);
+
+    /// Send your customized message to the client.
+    return response;
+  }
+
+  /**
+   * Get the content of an uploaded file.
+   */
+  @Override
+  public void getUploadedFile(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    String fieldName = request.getParameter(UConsts.PARAM_SHOW);
+    File f = receivedFiles.get(fieldName);
+    if (f != null) {
+      response.setContentType(receivedContentTypes.get(fieldName));
+      FileInputStream is = new FileInputStream(f);
+      copyFromInputStreamToOutputStream(is, response.getOutputStream());
+    } else {
+      renderXmlResponse(request, response, XML_ERROR_ITEM_NOT_FOUND);
+   }
+  }
+
+  /**
+   * Remove a file when the user sends a delete request.
+   */
+  @Override
+  public void removeItem(HttpServletRequest request, String fieldName)  throws UploadActionException {
+    File file = receivedFiles.get(fieldName);
+    receivedFiles.remove(fieldName);
+    receivedContentTypes.remove(fieldName);
+    if (file != null) {
+      file.delete();
+    }
+  }
+}

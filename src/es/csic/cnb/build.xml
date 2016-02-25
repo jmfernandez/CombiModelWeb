@@ -1,0 +1,297 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="ImageViewer" default="all" basedir="/home/pdsanchez/workspace/CombiModelWeb">
+	<description>
+		This is build file for GWT module 'es.csic.cnb.CombiModelWeb' deployment.
+		GWT Designer generates it each time when you initiate deployment.
+		
+		You can use this file later for manual deployment, but keep in mind, that
+		classpath is hardcoded in it, so after changes in classpath you should
+		regenerate build file.
+	</description>
+
+	<property name="gwt.home" value="/home/pdsanchez/software/eclipse/eclipse-3.7.1/plugins/com.google.gwt.eclipse.sdkbundle_2.4.0.v201208080120-rel-r37/gwt-2.4.0" />
+	<property name="gwt.module.id" value="es.csic.cnb.CombiModelWeb" />
+	<property name="war.name" value="cmodel.war" />
+
+	<target name="jars" description="Package up the module project and required projects as jars">
+		<mkdir dir="war/WEB-INF/lib" />
+		<!--=== CombiModelWeb ===-->
+		<jar destfile='war/WEB-INF/lib/CombiModelWeb.jar'>
+			<fileset dir="/home/pdsanchez/workspace/CombiModelWeb/src">
+				<include name="**"/>
+			</fileset>
+			<fileset dir="/home/pdsanchez/workspace/CombiModelWeb/test">
+				<include name="**"/>
+			</fileset>
+			<fileset dir="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/classes">
+				<include name="**/*.class"/>
+			</fileset>
+			<fileset dir="/home/pdsanchez/workspace/CombiModelWeb/test-classes">
+				<include name="**/*.class"/>
+			</fileset>
+		</jar>
+		<copy todir='war/WEB-INF/lib'>
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/test-classes"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/classes"/>
+			<fileset file="/home/pdsanchez/software/eclipse/eclipse-3.7.1/plugins/com.google.gwt.eclipse.sdkbundle_2.4.0.v201208080120-rel-r37/gwt-2.4.0/gwt-dev.jar"/>
+			<fileset file="/home/pdsanchez/software/eclipse/eclipse-3.7.1/plugins/com.google.gwt.eclipse.sdkbundle_2.4.0.v201208080120-rel-r37/gwt-2.4.0/validation-api-1.0.0.GA.jar"/>
+			<fileset file="/home/pdsanchez/software/eclipse/eclipse-3.7.1/plugins/com.google.gwt.eclipse.sdkbundle_2.4.0.v201208080120-rel-r37/gwt-2.4.0/validation-api-1.0.0.GA-sources.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/log4j-1.2.16.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/gwttheme.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/commons-email-1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/mail.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/miniTemplator.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/commons-fileupload-1.2.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/commons-io-2.3.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/gwtupload-0.6.6.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jsbml-0.8-rc1-with-dependencies.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/chebiWS-client-2.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/h2-1.3.163.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/miglayout15-swing.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/swingx-all-1.6.4.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/xstream-1.4.3.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/OSXPasteBoardWrapper-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/aloe-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/antlr-2.7.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/automaton-1.11-8.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/batik-core-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/bcprov-jdk15-1.46.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/castor-core-1.3.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/castor-xml-1.3.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/chart-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/commons-codec-1.4.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/commons-compress-1.4.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/commons-exec-1.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/commons-logging-1.1.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/commons-pool-1.6.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/dom4j-1.6.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/fontbox-1.7.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/forms-1.1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-graphics2d-2.2.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-graphicsbase-2.2.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-graphicsio-2.2.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-graphicsio-emf-2.2.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-graphicsio-pdf-2.2.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-io-2.2.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/gluegen-rt.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/guava-13.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/itext-2.1.7.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/itext-rtf-2.1.7.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jacob-1.15.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jai_codec-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jai_core-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jcampdx-lib-0.9.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jcommander-1.30.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jeldoclet-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jempbox-1.7.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jextexp-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jh-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jnbtools-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jni-inchi-0.7.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jogl.all.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/json-org-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/juniversalchardet-1.0.3.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/looks-2.1.4.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/macosx-application-bundle-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/mimepull-1.7.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/osra-linux-x64-1.3.8.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/pdfbox-1.7.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/poi-3.8.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/poi-ooxml-3.8.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/poi-ooxml-schemas-3.8.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/poi-scratchpad-3.8.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/regexp-1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/saaj-impl-1.3.19.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tagsoup-1.2.1.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tesseract-data-3.01.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tesseract-linux-x32-3.01.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tesseract-linux-x64-3.01.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tesseract-macosx-3.01.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tesseract-windows-3.01.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tika-core-1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tika-parsers-1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/ws-commons-util-1.0.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/wsdl4j-1.6.3.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/xmlbeans-2.5.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/xmlrpc-client-3.1.3.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/xmlrpc-common-3.1.3.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/xz-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/csjdbc-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/db2jcc-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derby-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derby-10.8.1.2.war"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_cs-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_de_DE-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_es-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_fr-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_hu-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_it-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_ja_JP-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_ko_KR-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_pl-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_pt_BR-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_ru-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_zh_CN-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_zh_TW-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyclient-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbynet-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyrun-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbytools-10.8.1.2.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/hsqldb-2.2.9.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/mysql-connector-java-5.1.10.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/ojdbc6-11.1.0.7.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/postgresql-9.1-901.jdbc4.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/sqljdbc4-1.0.jar"/>
+			<fileset file="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jchem.jar"/>
+		</copy>
+		<!--=== CombiModel ===-->
+		<jar destfile='war/WEB-INF/lib/CombiModel.jar'>
+			<fileset dir="/home/pdsanchez/workspace/CombiModel/src">
+				<include name="**"/>
+			</fileset>
+			<fileset dir="/home/pdsanchez/workspace/CombiModel/bin">
+				<include name="**/*.class"/>
+			</fileset>
+		</jar>		
+	</target>
+
+	<target name="gwt-compile" description="Compile to JavaScript">
+		<java classname="com.google.gwt.dev.Compiler" fork="yes" failonerror="true" maxmemory="256m">
+			<classpath>
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/src" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/test" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/src" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/test-classes" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/classes" />
+				<pathelement location="/home/pdsanchez/software/eclipse/eclipse-3.7.1/plugins/com.google.gwt.eclipse.sdkbundle_2.4.0.v201208080120-rel-r37/gwt-2.4.0/gwt-user.jar" />
+				<pathelement location="/home/pdsanchez/software/eclipse/eclipse-3.7.1/plugins/com.google.gwt.eclipse.sdkbundle_2.4.0.v201208080120-rel-r37/gwt-2.4.0/gwt-dev.jar" />
+				<pathelement location="/home/pdsanchez/software/eclipse/eclipse-3.7.1/plugins/com.google.gwt.eclipse.sdkbundle_2.4.0.v201208080120-rel-r37/gwt-2.4.0/validation-api-1.0.0.GA.jar" />
+				<pathelement location="/home/pdsanchez/software/eclipse/eclipse-3.7.1/plugins/com.google.gwt.eclipse.sdkbundle_2.4.0.v201208080120-rel-r37/gwt-2.4.0/validation-api-1.0.0.GA-sources.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/log4j-1.2.16.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/gwttheme.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/commons-email-1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/mail.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/miniTemplator.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/commons-fileupload-1.2.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/commons-io-2.3.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/lib/gwtupload-0.6.6.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/bin" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jsbml-0.8-rc1-with-dependencies.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/chebiWS-client-2.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/h2-1.3.163.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/miglayout15-swing.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/swingx-all-1.6.4.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/xstream-1.4.3.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/OSXPasteBoardWrapper-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/aloe-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/antlr-2.7.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/automaton-1.11-8.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/batik-core-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/bcprov-jdk15-1.46.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/castor-core-1.3.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/castor-xml-1.3.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/chart-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/commons-codec-1.4.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/commons-compress-1.4.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/commons-exec-1.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/commons-logging-1.1.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/commons-pool-1.6.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/dom4j-1.6.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/fontbox-1.7.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/forms-1.1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-graphics2d-2.2.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-graphicsbase-2.2.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-graphicsio-2.2.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-graphicsio-emf-2.2.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-graphicsio-pdf-2.2.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/freehep-io-2.2.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/gluegen-rt.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/guava-13.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/itext-2.1.7.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/itext-rtf-2.1.7.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jacob-1.15.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jai_codec-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jai_core-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jcampdx-lib-0.9.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jcommander-1.30.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jeldoclet-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jempbox-1.7.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jextexp-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jh-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jnbtools-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jni-inchi-0.7.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jogl.all.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/json-org-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/juniversalchardet-1.0.3.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/looks-2.1.4.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/macosx-application-bundle-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/mimepull-1.7.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/osra-linux-x64-1.3.8.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/pdfbox-1.7.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/poi-3.8.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/poi-ooxml-3.8.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/poi-ooxml-schemas-3.8.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/poi-scratchpad-3.8.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/regexp-1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/saaj-impl-1.3.19.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tagsoup-1.2.1.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tesseract-data-3.01.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tesseract-linux-x32-3.01.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tesseract-linux-x64-3.01.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tesseract-macosx-3.01.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tesseract-windows-3.01.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tika-core-1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/tika-parsers-1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/ws-commons-util-1.0.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/wsdl4j-1.6.3.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/xmlbeans-2.5.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/xmlrpc-client-3.1.3.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/xmlrpc-common-3.1.3.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/xz-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/csjdbc-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/db2jcc-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derby-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derby-10.8.1.2.war" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_cs-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_de_DE-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_es-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_fr-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_hu-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_it-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_ja_JP-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_ko_KR-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_pl-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_pt_BR-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_ru-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_zh_CN-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyLocale_zh_TW-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyclient-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbynet-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbyrun-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/derbytools-10.8.1.2.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/hsqldb-2.2.9.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/mysql-connector-java-5.1.10.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/ojdbc6-11.1.0.7.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/postgresql-9.1-901.jdbc4.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/sqljdbc4-1.0.jar" />
+				<pathelement location="/home/pdsanchez/workspace/CombiModel/lib/jchemlib/jchem.jar" />
+				<pathelement location="/home/pdsanchez/software/eclipse/eclipse-3.7.1/plugins/com.google.gwt.eclipse.sdkbundle_2.4.0.v201208080120-rel-r37/gwt-2.4.0/gwt-dev.jar" />
+			</classpath>
+			<arg value="-style"/>
+			<arg value="OBFUSCATED"/>
+			<arg value="${gwt.module.id}" />
+		</java>
+	</target>
+
+	<target name="war" depends="gwt-compile, jars">
+		<delete file="${war.name}" />
+		<jar destfile="${war.name}" basedir="war" duplicate="preserve" />
+	</target>
+	
+	<target name="deploy" depends="war">
+		<move file="${war.name}" todir="/home/pdsanchez/Descargas" />
+	</target>
+
+	<target name="all" depends="deploy" />
+
+</project>
