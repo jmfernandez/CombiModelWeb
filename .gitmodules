@@ -1,0 +1,4 @@
+[submodule "CombiModel"]
+	path = CombiModel
+	url = https://github.com/jmfernandez/CombiModel.git
+	branch = master

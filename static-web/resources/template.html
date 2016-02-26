@@ -1,0 +1,212 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+
+<html>
+<head>
+ <link type="text/css" rel="stylesheet" href="../../CombiModelWeb.css">
+ <link rel="stylesheet" href= "${baseUrl}/combimodelweb/gwt/mytheme/mytheme.css">
+<!--  <link rel="stylesheet" href= "${baseUrl}/combimodelweb/gwt/clean/clean.css"> -->
+
+<!--  <META HTTP-EQUIV="refresh" CONTENT="3"> -->
+
+ <title>Cmodel: ${status}</title>
+
+ <style type="text/css">
+  /* Quito el fondo para diferenciar esta pagina*/
+  .center {
+    background-image: none;
+  }
+ </style>
+
+ <script type="text/javascript">
+  function autoReload() {
+   // Recargar cada minuto mientras status sea running
+   if ("${status}" == "running") {
+    var timeID = setTimeout("location.reload(true)", 30000);
+   }
+  }
+ </script>
+
+</head>
+
+<body onload="autoReload()">
+
+<table style="text-align: left; width: 100%;" border="0" cellpadding="2" cellspacing="2">
+<tbody>
+<tr>
+ <td colspan="2" rowspan="1" style="vertical-align: top;" id="id_header"></td>
+</tr>
+<tr>
+ <td colspan="2" rowspan="1" style="vertical-align: top;"></td>
+</tr>
+<tr>
+ <td colspan="2" rowspan="1" style="vertical-align: top;"><br></td>
+</tr>
+<tr>
+ <td style="vertical-align: top;" id="id_main">
+
+ <table class="center" style="width: 90%;" cellspacing="0" cellpadding="0">
+  <tbody>
+
+   <tr style="vertical-align: middle;">
+    <td>
+     <table cellspacing="10" class="title" style="width: 100%; height: 35px; ">
+      <colgroup>
+       <col>
+      </colgroup>
+
+      <tbody>
+       <tr>
+        <td style="vertical-align: middle;">
+         <div class="title-text" style="text-align: right; width: 100%;">
+          ${cmodelId}
+         </div>
+        </td>
+       </tr>
+      </tbody>
+     </table>
+    </td>
+   </tr>
+
+   <tr>
+    <td>
+     <table style="width: 100%;" cellspacing="15" cellpadding="0">
+      <tbody>
+       <tr>
+        <td style="vertical-align: middle;" align="left">
+         <table class="labelInfo" style="width: 100%;" cellspacing="0" cellpadding="0">
+          <tbody>
+           <tr>
+            <td style="vertical-align: top;" align="left">
+             <b>Creation date: </b>${initdate}
+            </td>
+           </tr>
+
+           <tr>
+            <td style="vertical-align: top;" align="left">&nbsp;</td>
+           </tr>
+
+           <!-- $if existObj existMM -->
+           <tr>
+            <td align="left" style="vertical-align: top;">
+             <div class="gwt-Label labelBold">
+              Options:
+             </div>
+            </td>
+           </tr>
+           <!-- $endIf -->
+
+           <!-- $if existObj -->
+           <tr>
+            <td align="left" style="vertical-align: top;">
+             <div class="gwt-Label">
+              - Biomass joint function selected
+             </div>
+            </td>
+           </tr>
+           <!-- $endIf -->
+
+           <!-- $if existBMM -->
+           <tr>
+            <td align="left" style="vertical-align: top;">
+             <div class="gwt-Label">
+              - Basic minimum media selected
+             </div>
+            </td>
+           </tr>
+           <!-- $endIf -->
+           <!-- $if existIMM -->
+           <tr>
+            <td align="left" style="vertical-align: top;">
+             <div class="gwt-Label">
+              - Intersection minimum media selected
+             </div>
+            </td>
+           </tr>
+           <!-- $endIf -->
+           <!-- $if existCMM -->
+           <tr>
+            <td align="left" style="vertical-align: top;">
+             <div class="gwt-Label">
+              - Combination minimum media selected
+             </div>
+            </td>
+           </tr>
+           <!-- $endIf -->
+
+           <tr>
+            <td align="left" style="vertical-align: top;">
+             <div style="height: 5px;"></div>
+            </td>
+           </tr>
+
+           <tr>
+            <td style="vertical-align: top;" align="left">
+             <div class="gwt-Label labelBold">
+              Models:
+             </div>
+            </td>
+           </tr>
+
+           <tr>
+            <td align="left" style="vertical-align: top;">
+             <table>
+              <colgroup>
+               <col>
+               <col>
+              </colgroup>
+
+              <tbody>
+               <!-- $BeginBlock modelList -->
+  		       <tr>
+  		        <td><img src="../../images/icon/bullet.png" class="gwt-Image"></td>
+			    <td>
+                 <div class="gwt-Label">${modelname}</div>
+                </td>
+		       </tr>
+ 		       <!-- $EndBlock modelList -->
+              </tbody>
+             </table>
+            </td>
+           </tr>
+
+           <tr>
+            <td align="left" style="vertical-align: top;">
+             <div class="gwt-HTML" style="text-align: center;">
+             ${chtml}
+             </div>
+            </td>
+           </tr>
+          </tbody>
+         </table>
+        </td>
+       </tr>
+
+       <tr>
+        <td style="vertical-align: middle;" align="left">&nbsp;</td>
+       </tr>
+
+       <tr>
+        <td style="vertical-align: middle;" align="center">
+         <div>
+          <a class="gwt-Anchor" title="Home" href="${baseUrl}/CombiModelWeb.html"><img class="gwt-Image" src="../../images/icon/home.png" alt=""></a>
+         </div>
+        </td>
+       </tr>
+      </tbody>
+     </table>
+    </td>
+   </tr>
+  </tbody>
+ </table>
+
+ </td>
+ <td style="vertical-align: top;" id="id_aux"></td>
+</tr>
+<tr>
+ <td colspan="2" rowspan="1" style="vertical-align: top;" id="id_footer"></td>
+</tr>
+</tbody>
+</table>
+
+</body>
+</html>

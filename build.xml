@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<project name="CombiModelWeb" default="all" basedir="." xmlns:ivy="antlib:org.apache.ivy.ant">
+	<description>
+		CombiModelWeb
+		This is build file for GWT module 'es.csic.cnb.CombiModelWeb' deployment.
+		GWT Designer generates it each time when you initiate deployment.
+		
+		You can use this file later for manual deployment, but keep in mind, that
+		classpath is hardcoded in it, so after changes in classpath you should
+		regenerate build file.
+	</description>
+
+	<dirname property="CombiModelWeb.dir" file="${ant.file.CombiModelWeb}" />
+	
+	<property name="gwt.home" value="/home/pdsanchez/software/eclipse/eclipse-3.7.1/plugins/com.google.gwt.eclipse.sdkbundle_2.4.0.v201208080120-rel-r37/gwt-2.4.0" />
+	<property name="gwt.module.id" value="es.csic.cnb.CombiModelWeb" />
+	<property name="war.name" value="cmodel.war" />
+
+	<include file="${CombiModelWeb.dir}/CombiModel/build.xml"/>
+	
+	<property name="CombiModelWeb.config" location="${CombiModelWeb.dir}/config"/>
+	<property name="CombiModelWeb.src" location="${CombiModelWeb.dir}/src" />
+	<property name="CombiModelWeb.test" location="${CombiModelWeb.dir}/test" />
+	<property name="CombiModelWeb.build" location="${CombiModelWeb.dir}/war" />
+	<property name="CombiModelWeb.build.classes" location="${CombiModel.build}/WEB-INF/classes" />
+	<property name="CombiModelWeb.libs" location="${CombiModelWeb.dir}/lib" />
+	<property name="CombiModelWeb.staticLibs" location="${CombiModelWeb.dir}/static-libs" />
+	<property name="CombiModelWeb.dist" location="${CombiModelWeb.dir}/dist" />
+	<property name="CombiModelWeb.war" location="${CombiModelWeb.dir}/${war.name}" />
+
+	<target name="CombiModelWeb.dependencies.bootstrap" depends="CombiModel.ivy-bootstrap.bootstrap-ivy" unless="skip.CombiModelWeb.dependencies.download">
+		<ivy:configure settingsId="CombiModelWeb.ivy.instance" file="${CombiModelWeb.dir}/CombiModelWeb-ivysettings.xml"/>
+		
+		<!-- This dependency is added due an Ivy bug related to gwtupload -->
+		<ivy:resolve settingsRef="CombiModelWeb.ivy.instance">
+			<ivy:dependency org="javax.validation" name="validation-api" rev="1.0.0.GA" force="true" conf="*->*,!test,!javadoc" />
+		</ivy:resolve>
+		<ivy:retrieve settingsRef="CombiModelWeb.ivy.instance" type="jar,source,bundle" pattern="${CombiModelWeb.libs}/[artifact]-[revision](-[classifier]).[ext]"/>
+
+		<ivy:resolve settingsRef="CombiModelWeb.ivy.instance">
+			<ivy:dependency org="com.google.gwt" name="gwt-dev" rev="2.5.1" conf="*->*,!test,!source,!javadoc"/>
+			<ivy:dependency org="com.googlecode.gwtupload" name="gwtupload" rev="1.0.0" conf="*->*,!test,!source,!javadoc">
+				<ivy:exclude org="javax.validation" module="validation-api"/>
+			</ivy:dependency>
+			<ivy:dependency org="org.apache.commons" name="commons-email" rev="1.4" conf="*->*,!test,!source,!javadoc"/>
+			<ivy:dependency org="commons-fileupload" name="commons-fileupload" rev="1.2.2" conf="*->*,!test,!source,!javadoc"/>
+			<ivy:dependency org="org.bsc.util" name="minitemplator-repackaged" rev="1.0" conf="*->*,!test,!source,!javadoc"/>
+		</ivy:resolve>
+		<ivy:dependencytree settingsRef="CombiModelWeb.ivy.instance"/>
+		<ivy:retrieve settingsRef="CombiModelWeb.ivy.instance" type="jar,bundle" pattern="${CombiModelWeb.libs}/[artifact]-[revision](-[classifier]).[ext]"/>
+		
+		<!-- We do this task only once -->
+		<property name="skip.CombiModelWeb.dependencies.download" value="true"/>
+	</target>
+
+	<target name="compile" depends="CombiModelWeb.dependencies.bootstrap , CombiModel.dist" description="Compile">
+		<mkdir dir="${CombiModelWeb.build.classes}"/>
+		<path id="CombiModelWeb.libs.path">
+			<fileset dir="${CombiModelWeb.libs}" includes="**/*.jar"/>
+			<fileset dir="${CombiModelWeb.staticLibs}"  includes="**/*.jar"/>
+			<fileset dir="${CombiModel.dist.libs}"  includes="**/*.jar"/>
+			<fileset file="${CombiModel.jar}"/>
+		</path>
+		<javac
+			includeantruntime="false"
+			includes="**"
+			source="${build.compiler.source}"
+			srcdir="${CombiModelWeb.src}"
+			destdir="${CombiModelWeb.build.classes}"
+		>
+			<classpath refid="CombiModelWeb.libs.path" />
+		</javac>
+	</target>
+	
+	<target name="gwt-compile" depends="compile" description="Compile to JavaScript">
+		<mkdir dir="${CombiModelWeb.build}"/>
+		<java classname="com.google.gwt.dev.Compiler" fork="yes" failonerror="true" maxmemory="256m">
+			<!--
+			<classpath refid="CombiModelWeb.libs.path" />
+			-->
+			<!-- This is needed to find the *.gwt.xml file -->
+			<classpath>
+				<fileset dir="${CombiModelWeb.libs}" />
+				<fileset dir="${CombiModelWeb.staticLibs}" />
+				<fileset dir="${CombiModel.dist.libs}" />
+				<fileset file="${CombiModel.jar}"/>
+				<pathelement location="${CombiModelWeb.src}" />
+			<!--
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/classes" />
+			-->
+			</classpath>
+			
+			<arg value="-war"/>
+			<arg value="${CombiModelWeb.build}"/>
+			<arg value="-style"/>
+			<arg value="OBFUSCATED"/>
+			<arg value="${gwt.module.id}" />
+		</java>
+	</target>
+	
+	<target name="jars" depends="compile" description="Package up the module project and required projects as jars">
+		<mkdir dir="${CombiModelWeb.build}/WEB-INF/lib" />
+		<!--=== CombiModelWeb ===-->
+		<jar destfile='${CombiModelWeb.build}/WEB-INF/lib/CombiModelWeb.jar'>
+			<fileset dir="${CombiModelWeb.src}">
+				<exclude name="**/*.java"/>
+			</fileset>
+			<!--
+			<fileset dir="${CombiModelWeb.test}">
+				<include name="**"/>
+			</fileset>
+			-->
+			<fileset dir="${CombiModelWeb.build.classes}">
+				<include name="**/*.class"/>
+			</fileset>
+			<!--
+			<fileset dir="/home/pdsanchez/workspace/CombiModelWeb/test-classes">
+				<include name="**/*.class"/>
+			</fileset>
+			-->
+		</jar>
+		<copy todir="${CombiModelWeb.build}/WEB-INF/lib" preservelastmodified="true">
+			<!--
+			<fileset file="/home/pdsanchez/workspace/CombiModelWeb/test-classes"/>
+			-->
+			<fileset dir="${CombiModelWeb.libs}" />
+			<fileset dir="${CombiModelWeb.staticLibs}" />
+			<fileset dir="${CombiModel.dist.libs}" />
+			<fileset file="${CombiModel.jar}"/>
+		</copy>
+		<mkdir dir="${CombiModelWeb.build}/WEB-INF/classes" />
+		<copy todir="${CombiModelWeb.build}/WEB-INF/classes" preservelastmodified="true">
+			<fileset dir="${CombiModelWeb.build.classes}"/>
+			<fileset dir="${CombiModelWeb.src}">
+				<exclude name="**/*.java"/>
+			</fileset>
+		</copy>
+	</target>
+	
+	<!--
+	<target name="war" depends="jars,gwt-compile">
+	-->
+	<target name="war">
+		<war destfile="${CombiModelWeb.war}" webxml="${CombiModelWeb.config}/web.xml">
+			<fileset dir="${CombiModelWeb.dir}/static-web" />
+			<fileset dir="${CombiModelWeb.build}">
+				<include name="combimodelweb/**" />
+			</fileset>
+			<webinf file="${CombiModelWeb.config}/cmodel.properties"/>
+			<webinf dir="${CombiModelWeb.build}/WEB-INF" >
+				<include name="deploy/**" />
+			</webinf>
+			<lib dir="${CombiModelWeb.libs}" />
+			<lib dir="${CombiModelWeb.staticLibs}" />
+			<lib dir="${CombiModel.dist.libs}" />
+			<lib file="${CombiModel.jar}"/>
+			<classes dir="${CombiModelWeb.build.classes}" />
+		</war>
+	</target>
+	
+	<target name="deploy" depends="war">
+		<move file="${war.name}" todir="/home/pdsanchez/Descargas" />
+	</target>
+
+	<target name="all" depends="deploy" />
+
+</project>

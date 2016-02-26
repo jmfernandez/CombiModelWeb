@@ -1,0 +1,205 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN">
+<html>
+<head>
+
+<link type="text/css" rel="stylesheet" href="../CombiModelWeb.css">
+<title>Cmodel: help &amp; contact</title>
+
+
+</head>
+<body>
+
+ <table class="center" style="width: 90%;" cellpadding="0" cellspacing="0">
+  <tbody>
+   <tr style="vertical-align: middle;">
+    <td>
+     <table class="title" style="width: 100%; height: 35px;" cellspacing="10">
+      <colgroup>
+       <col>
+      </colgroup>
+      <tbody>
+       <tr>
+        <td style="vertical-align: middle;">
+         <div class="title-text" style="text-align: right; width: 100%;">Cmodel: help &amp; contact</div>
+        </td>
+       </tr>
+      </tbody>
+     </table>
+    </td>
+   </tr>
+   <tr>
+    <td>
+     <table style="width: 100%;" cellpadding="0" cellspacing="15">
+      <tbody>
+       <tr>
+        <td style="vertical-align: middle;" align="left">
+         <table class="help-page" style="width: 100%;" cellpadding="0" cellspacing="0">
+          <tbody>
+           <tr>
+            <td style="vertical-align: top;" align="left">
+             <p>
+              Welcome to <strong>Cmodel</strong>, the server for combining individual metabolic models into a single,
+              combined community model.
+             </p>
+             <p>
+              A combination of models in <strong>Cmodel</strong> implies the following steps:
+             </p>
+
+             <div style="margin-left: 40px;">
+              <a href="#pto1">Reading SBML models</a>
+              <br> <a href="#pto2">Standardizing metabolite names</a>
+              <br> <a href="#pto3">Standardizing reactions</a>
+              <br> <a href="#pto4">Creation of new compartments</a>
+              <br> <a href="#pto5">Objective functions </a>
+              <br> <a href="#pto6">Determination of growth medium</a>
+              <br> <a href="#pto7">Results</a><br>
+             </div> <br>
+             <p>
+              <br>
+             </p>
+
+             <p class="help-header">
+              <a name="pto1"></a> <img style="width: 16px; height: 16px;" alt="" src="../images/icon/link.png"> Reading
+              SBML models
+             </p>
+             <p>
+              <strong>Cmodel</strong> reads correctly models complaint with SMBL standard.
+             </p>
+             <p>&nbsp;</p>
+             <p class="help-header">
+              <a name="pto2"></a> <img style="width: 16px; height: 16px;" alt="" src="../images/icon/link.png">
+              Standardizing metabolite names
+             </p>
+             <p>
+              To correctly identify equivalent metabolites in different models, <strong>Cmodel</strong> attempts to
+              standarize their names. For that purpose, the system stores a internal database of know compounds, taken from
+              more than 100 metabolic models already released. Metabolites in the models that you provide are crosschecked
+              with that database using names, formulas, charges and external identifiers (CheBI or KEGG). A very big
+              percentage of compounds find a match in the database. Unmatched ones correspond to new instances of chemical
+              species, or to existing ones that could not be mapped for some reason. These will be subjected to a step of
+              manual curation as part of the maintenance of <strong>Cmodel</strong> internal database
+             </p>
+             <p>&nbsp;</p>
+             <p class="help-header">
+              <a name="pto3"></a> <img style="width: 16px; height: 16px;" alt="" src="../images/icon/link.png">
+              Standardizing reactions
+             </p>
+             <p>Reactions are also normalized by means of their metabolites. Two reactions are assumed to be the same if
+              they involve same reactants and products, with the same stoichiometry. In this case, we unify the identifiers
+              of the reactions.</p>
+             <p>&nbsp;</p>
+             <p class="help-header">
+              <a name="pto4"></a> <img style="width: 16px; height: 16px;" alt="" src="../images/icon/link.png">
+              Creation of new compartments
+             </p>
+             <p>The compartments specified in the individual models are read, and transformed in the following structure:
+              One cytosolic (cell) compartment for each species, a common extracellular space, where metabolites can be
+              released to or taken from, and a common boundary (universe) compartment where metabolites are allowed to
+              diffuse. Some models also contain periplasmic or organellar compartments: these are also kept in the combined
+              model as proper of their original species.</p>
+             <p>&nbsp;</p>
+             <p class="help-header">
+              <a name="pto5"></a> <img style="width: 16px; height: 16px;" alt="" src="../images/icon/link.png">
+              Objective functions
+             </p>
+             <p>
+              <strong>Cmodel</strong> generates new objective functions which can be set to:
+             </p>
+             <p style="margin-bottom: 0cm; margin-left: 30px;">
+              - <strong>Optimizing maximal production of biomass</strong>: A new objective function is created that optimizes
+              the sum of all individual biomasses. This will produce a model that will look for the maximum biomass
+              production. Therefore, it is not necessary that all species grow. This is the option by default.
+             </p>
+             <p style="margin-bottom: 0cm; margin-left: 30px;">
+              - <strong>Optimizing growth for all species</strong>: A new reaction of generation of global biomass is
+              created, combining the individual biomass reactions:
+             </p>
+             <p style="margin-bottom: 0cm; margin-left: 30px;">
+              <em>Biomass 1 + Biomass 2 + &#8230; + Biomass n -&gt; global_biomass</em>
+             </p>
+             <p style="margin-bottom: 0cm; margin-left: 30px;">By setting the objective function to the optimization of
+              this reaction, we force the combined model to maximize the creation of global biomass, while keeping the growth
+              of all individual species. If no global biomass is produced, then the community is not stable in the given
+              conditions and hence there is no growth.</p>
+             <p>&nbsp;</p>
+             <p class="help-header">
+              <a name="pto6"></a> <img style="width: 16px; height: 16px;" alt="" src="../images/icon/link.png">
+              Determination of growth medium
+             </p>
+             <p>
+              <strong>Cmodel</strong> first looks for the minimal medium allowing the growth of each of the individual
+              species. It starts assuming a preferred minimum set of nutrients: Glucose or Glycerol (Carbon sources), Ammonia
+              (Nitrogen source), Phosphate (Phosphorous source), Sulfate (Sulfur source), and water. If the model predicts
+              growth in these conditions, this is set as the minimum medium for that species. Otherwise, it determines the
+              minimum set of chemicals needed for growth by combinatorially exploring the space of all possible exchange
+              reactions, by means of a genetic algorithm. Once all the minimal media for individual species has been found,
+              it is possible to select for:
+             </p>
+             <p style="margin-bottom: 0cm; margin-left: 30px;">
+              - <strong>Medium containing all metabolites found in the initial media of each species</strong>. This is the
+              option by default.
+             </p>
+             <p style="margin-bottom: 0cm; margin-left: 30px;">
+              - <strong>Minimum growth medium</strong>, containing the union of all the minimal requirements for individual
+              species.
+             </p>
+             <p>&nbsp;</p>
+             <p class="help-header">
+              <a name="pto7"></a> <img style="width: 16px; height: 16px;" alt="" src="../images/icon/link.png"> Results
+             </p>
+             <p>The results are composed of two files:</p>
+             <p style="margin-bottom: 0cm; text-decoration: none; margin-left: 30px;">- The first contains the combined
+              model, in SBML format.</p>
+             <p style="margin-bottom: 0cm; text-decoration: none; margin-left: 30px;">
+              - The second specifies the compounds that could not be mapped to <strong>Cmodel</strong> database, and
+              therefore could not be standardized. This file will not be created in case that all compounds have been mapped.
+             </p>
+             <p>&nbsp;</p>
+            </td>
+           </tr>
+           <tr>
+            <td style="vertical-align: top;" align="left">
+             <hr>
+            </td>
+           </tr>
+           <tr>
+            <td style="vertical-align: top;" align="left">
+             <p class="help-contact">
+              <a name="contact"></a> <img style="width: 16px; height: 16px;" alt="" title="Contact" src="../images/icon/email.png" align="top"> Contact
+             </p>
+             <p style="margin-bottom: 0cm; text-align: center;">
+              <span style="text-decoration: none;">Pablo D. Sanchez: <a href="mailto:pd.sanchez@cnb.csic.es">pd.sanchez@cnb.csic.es</a></span>
+             </p>
+             <p style="margin-bottom: 0cm; text-align: center;">
+              <span style="text-decoration: none;">Javier Tamames: <a href="mailto:jtamames@cnb.csic.es">jtamames@cnb.csic.es</a></span>
+             </p>
+             <p style="margin-bottom: 0cm; text-decoration: none; text-align: center;">Tel +34 91 5855316</p>
+             <p style="margin-bottom: 0cm; text-decoration: none; text-align: center;">Tamames Lab, CNB - CSIC, Madrid, Spain</p>
+            </td>
+           </tr>
+
+          </tbody>
+         </table>
+        </td>
+       </tr>
+
+       <tr>
+        <td style="vertical-align: top;" align="left"><br></td>
+       </tr>
+       <tr>
+        <td style="vertical-align: middle;" align="center">
+         <div>
+          <a class="gwt-Anchor" title="Home" href="../CombiModelWeb.html"><img style="width: 16px; height: 16px;" title="Cmodel - Home"
+           class="gwt-Image" src="../images/icon/home.png" alt=""></a>
+         </div>
+        </td>
+       </tr>
+      </tbody>
+     </table>
+    </td>
+   </tr>
+  </tbody>
+ </table>
+
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Perl interpreter location
+perl = /usr/bin/perl
+
+# Matlab MCR location
+mcr = /usr/local/MATLAB/MATLAB_Compiler_Runtime/v714
+
+# Time in hours to delete the users directories
+schedule.limit.hours = 72
+schedule.zip.directory = /home/pdsanchez/CNB/
+schedule.zip = true
+
+### MAIL configuration
+# Put proper configuration values
+#mail.smtp.auth = true
+#mail.smtp.host =
+#mail.smtp.user =
+#mail.smtp.pwd  =
+
+#mail.error.user =

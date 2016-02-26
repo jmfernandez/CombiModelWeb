@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
+              http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5" xmlns="http://java.sun.com/xml/ns/javaee">
+
+	<description>CombiModels</description>
+	<display-name>CombiModels</display-name>
+
+
+	<context-param>
+		<!-- max size of the upload request -->
+		<param-name>maxSize</param-name>
+		<param-value>25600000</param-value>
+	</context-param>
+	<context-param>
+		<!-- Useful in development mode to slow down the uploads in fast networks.
+			Put the number of milliseconds to sleep in each block received in the server.
+			false or 0, means don't use slow uploads -->
+		<param-name>slowUploads</param-name>
+		<param-value>0</param-value>
+	</context-param>
+	
+	<listener>
+		<listener-class>es.csic.cnb.server.DbStarter</listener-class>
+	</listener>
+
+
+	<!-- Servlets -->
+
+	<servlet>
+		<servlet-name>mergeServlet</servlet-name>
+		<servlet-class>es.csic.cnb.server.MergeServiceImpl</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>mergeServlet</servlet-name>
+		<url-pattern>/combimodelweb/merger</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>uploadServlet</servlet-name>
+		<servlet-class>es.csic.cnb.server.UploadServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>uploadServlet</servlet-name>
+	<url-pattern>*.gupld</url-pattern>
+	</servlet-mapping>
+
+
+<!-- 	<servlet> -->
+<!-- 		<servlet-name>ServletInitializer</servlet-name> -->
+<!-- 		<servlet-class>es.csic.cnb.server.ServletInitializer</servlet-class> -->
+<!-- 		<load-on-startup>1</load-on-startup> -->
+<!-- 	</servlet> -->
+
+	<!-- Default page to serve -->
+	<welcome-file-list>
+		<welcome-file>CombiModelWeb.html</welcome-file>
+	</welcome-file-list>
+
+</web-app>
