@@ -1,8 +1,10 @@
 package es.csic.cnb.client;
 
 import gwtupload.client.HasProgress;
+import gwtupload.client.BaseUploadStatus;
 import gwtupload.client.IUploadStatus;
 import gwtupload.client.IUploader;
+import gwtupload.client.Utils;
 
 import java.text.ParseException;
 import java.util.Set;
@@ -34,7 +36,7 @@ import com.google.gwt.user.client.ui.Widget;
  * @author pdsanchez
  *
  */
-public class CustomUploadStatus implements IUploadStatus {
+public class CustomUploadStatus extends BaseUploadStatus {
 
   /**
    * A basic progress bar implementation used when the user doesn't provide any.
@@ -61,7 +63,7 @@ public class CustomUploadStatus implements IUploadStatus {
       if (statusBar == null) {
         return;
       }
-      int percent = IUploader.Utils.getPercent(done, total);
+      int percent = Utils.getPercent(done, total);
       statusBar.setWidth(percent + "px");
       statusMsg.setText(percent + "%");
     }
@@ -100,7 +102,9 @@ public class CustomUploadStatus implements IUploadStatus {
   /**
    * Main panel, attach it to the document using getWidget().
    */
+   /*
   protected Panel panel = getPanel();
+  */
 
   /**
    * Label with the progress status.
@@ -149,6 +153,7 @@ public class CustomUploadStatus implements IUploadStatus {
     return hp;
   }
 
+/*
   protected Label getStatusLabel() {
     return new Label();
   }
@@ -156,10 +161,10 @@ public class CustomUploadStatus implements IUploadStatus {
   protected Label getFileNameLabel() {
     return new Label();
   }
-
   protected Label getCancelLabel() {
     return new Label(" ");
   }
+*/
 
   protected Label getCoefLabel() {
     return new Label("Coef");
@@ -199,9 +204,11 @@ public class CustomUploadStatus implements IUploadStatus {
   /* (non-Javadoc)
    * @see gwtupload.client.IUploadStatus#getWidget()
    */
+   /*
   public Widget getWidget() {
     return panel;
   }
+  */
 
   /* (non-Javadoc)
    * @see gwtupload.client.IUploadStatus#newInstance()
