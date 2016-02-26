@@ -3,6 +3,7 @@ package es.csic.cnb.server;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.text.SimpleDateFormat;
@@ -126,11 +127,8 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
     // Capturar todas las excepciones para poder notificar al user
     try {
       // Cargar template.html
-      MiniTemplator.TemplateSpecification tsp = new MiniTemplator.TemplateSpecification();
+      MiniTemplator.Builder tsp = new MiniTemplator.Builder();
       try {
-        String templateText = IOUtils.toString(getServletContext().getResourceAsStream("/resources/template.html"), "UTF-8");
-        tsp.templateText = templateText;
-
         Set<String> flags = new HashSet<String>();
         if (cdata.getMail() != null) {
           flags.add("existEmail");
@@ -148,9 +146,10 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
         else if (mm == ClientData.COMBIMM) {
           flags.add("existCMM");
         }
-        tsp.conditionFlags = flags;
+        tsp.setConditionFlags(flags);
 
-        templator = new MiniTemplator(tsp);
+        InputStreamReader templateTextReader = new InputStreamReader(getServletContext().getResourceAsStream("/resources/template.html"), "UTF-8");
+        templator = tsp.build(templateTextReader);
 
         StringBuilder chtml = new StringBuilder();
         chtml.append("<p><img src=\"../../images/icon/loader.gif\" alt=\"running\"/> ");
