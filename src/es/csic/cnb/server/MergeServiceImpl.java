@@ -40,6 +40,7 @@ import biz.source_code.miniTemplator.MiniTemplator.TemplateSyntaxException;
 import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 import es.csic.cnb.ModelManager;
+import es.csic.cnb.util.PropertiesParser;
 import es.csic.cnb.client.rpc.MergeService;
 import es.csic.cnb.shared.ClientData;
 import es.csic.cnb.shared.JobStatus;
@@ -87,7 +88,7 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
     log.info(new StringBuilder().append("START ").append(logId).append(userAgent).toString());
 
     // Retrieve properties file
-    Properties properties = new Properties();
+    Properties properties = new PropertiesParser(System.getProperties());
     try {
       properties.load(getServletContext().getResourceAsStream(CMODEL_PROPERTIES_FILE));
     } catch (IOException e) {
