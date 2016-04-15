@@ -6,7 +6,7 @@ mcr = /usr/local/MATLAB/MATLAB_Compiler_Runtime/v714
 
 # Time in hours to delete the users directories
 schedule.limit.hours = 72
-schedule.zip.directory = /home/pdsanchez/CNB/
+schedule.zip.directory = ${user.home}/CNB/
 schedule.zip = true
 
 ### MAIL configuration
