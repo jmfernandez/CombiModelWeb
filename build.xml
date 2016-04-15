@@ -65,6 +65,7 @@
 			includeantruntime="false"
 			includes="**"
 			source="${build.compiler.source}"
+			debug="${build.compiler.debug}"
 			srcdir="${CombiModelWeb.src}"
 			destdir="${CombiModelWeb.build.classes}"
 		>
@@ -140,7 +141,7 @@
 	<!--
 	<target name="war" depends="jars,gwt-compile">
 	-->
-	<target name="war">
+	<target name="war" description="It creates the war file">
 		<war destfile="${CombiModelWeb.war}" webxml="${CombiModelWeb.config}/web.xml">
 			<fileset dir="${CombiModelWeb.dir}/static-web" />
 			<fileset dir="${CombiModelWeb.build}">
@@ -157,6 +158,16 @@
 			<classes dir="${CombiModelWeb.build.classes}" />
 		</war>
 	</target>
+	
+	<target name="makedist" depends="jars,gwt-compile,war" description="It compiles everything" />
+	
+	<target name="clean" description="It cleans up CombiModelWeb compilation">
+		<delete dir="${CombiModelWeb.build}" failonerror="false" />
+		<delete dir="${CombiModelWeb.dist}" failonerror="false" />
+		<delete file="${CombiModelWeb.war}" failonerror="false" />
+	</target>
+	
+	<target name="realclean" depends="clean,CombiModel.clean" description="It cleans up CombiModel and CombiModelWeb compilation" />
 	
 	<target name="deploy" depends="war">
 		<move file="${war.name}" todir="/home/pdsanchez/Descargas" />
