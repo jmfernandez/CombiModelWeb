@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.commons.io.FileUtils;
+import org.sbml.jsbml.KineticLaw;
 import org.sbml.jsbml.ListOf;
 import org.sbml.jsbml.Reaction;
 import org.sbml.jsbml.SBMLDocument;
@@ -152,13 +153,16 @@ public class DefaultMinMedia {
         }
 
       if (exchange) {
-        if (!mmedia) {
-          r.getKineticLaw().getLocalParameter("LOWER_BOUND").setValue(0.0);
-        }
-        // Activo cuando tiene que estar activo pero no lo esta
-        else if (r.getKineticLaw().getLocalParameter("LOWER_BOUND").getValue() == 0) {
-          r.getKineticLaw().getLocalParameter("LOWER_BOUND").setValue(-1000);
-        }
+	KineticLaw kl = r.getKineticLaw();
+	if(kl!=null) {
+		if (!mmedia) {
+		  kl.getLocalParameter("LOWER_BOUND").setValue(0.0);
+		}
+		// Activo cuando tiene que estar activo pero no lo esta
+		else if (kl.getLocalParameter("LOWER_BOUND").getValue() == 0) {
+		  kl.getLocalParameter("LOWER_BOUND").setValue(-1000);
+		}
+	}
       }
     }
 

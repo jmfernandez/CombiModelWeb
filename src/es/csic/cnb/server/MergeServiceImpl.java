@@ -27,6 +27,7 @@ import javax.xml.stream.XMLStreamException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.mail.EmailException;
+import org.sbml.jsbml.KineticLaw;
 import org.sbml.jsbml.Reaction;
 import org.sbml.jsbml.SBMLDocument;
 import org.sbml.jsbml.SBMLReader;
@@ -328,7 +329,10 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
 
             if (generic) {
               if (!mmIdList.contains(r.getId())) {
-                r.getKineticLaw().getLocalParameter("LOWER_BOUND").setValue(0.0);
+		KineticLaw kl = r.getKineticLaw();
+		if(kl != null) {
+			kl.getLocalParameter("LOWER_BOUND").setValue(0.0);
+		}
               }
             }
           }
