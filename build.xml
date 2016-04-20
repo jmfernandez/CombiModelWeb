@@ -38,6 +38,9 @@
 		<ivy:retrieve settingsRef="CombiModelWeb.ivy.instance" type="jar,source,bundle" pattern="${CombiModelWeb.libs}/[artifact]-[revision](-[classifier]).[ext]"/>
 
 		<ivy:resolve settingsRef="CombiModelWeb.ivy.instance">
+			<!-- This dependency is here to update log4j 1.2.x, used in gwtupload, to its latest version -->
+			<ivy:dependency org="log4j" name="log4j" rev="1.2.+"/>
+			
 			<ivy:dependency org="com.google.gwt" name="gwt-dev" rev="2.5.1" conf="*->*,!test,!source,!javadoc"/>
 			<ivy:dependency org="com.googlecode.gwtupload" name="gwtupload" rev="1.0.0" conf="*->*,!test,!source,!javadoc">
 				<ivy:exclude org="javax.validation" module="validation-api"/>
@@ -93,12 +96,46 @@
 			
 			<arg value="-war"/>
 			<arg value="${CombiModelWeb.build}"/>
+			<!--
 			<arg value="-style"/>
 			<arg value="OBFUSCATED"/>
+			-->
+			<arg value="-style"/>
+			<arg value="PRETTY"/>
+			<!--
+			<arg value="-logLevel"/>
+			<arg value="DEBUG"/>
+			-->
 			<arg value="${gwt.module.id}" />
 		</java>
 	</target>
 	
+	<target name="devmode" description="Run development mode">
+		<java failonerror="true" fork="true" classname="com.google.gwt.dev.DevMode" maxmemory="512m">
+			<classpath>
+				<fileset dir="${CombiModelWeb.libs}" />
+				<fileset dir="${CombiModelWeb.staticLibs}" />
+				<fileset dir="${CombiModel.dist.libs}" />
+				<fileset file="${CombiModel.jar}"/>
+				<pathelement location="${CombiModelWeb.src}" />
+			<!--
+				<pathelement location="/home/pdsanchez/workspace/CombiModelWeb/war/WEB-INF/classes" />
+			-->
+			</classpath>
+			<jvmarg value="-Xdebug" />
+			<jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000" />
+			<arg value="-startupUrl" />
+			<arg value="CombiModelWeb.html" />
+			<arg value="-noserver" />
+			<!-- Additional arguments like -style PRETTY or -logLevel DEBUG -->
+			<arg value="-war" />
+			<arg value="${CombiModelWeb.build}" />
+			<arg value="-logLevel" />
+			<arg value="DEBUG" />
+			<arg value="${gwt.module.id}" />
+		</java>
+	</target>
+
 	<target name="jars" depends="compile" description="Package up the module project and required projects as jars">
 		<mkdir dir="${CombiModelWeb.build}/WEB-INF/lib" />
 		<!--=== CombiModelWeb ===-->
@@ -141,7 +178,7 @@
 	<!--
 	<target name="war" depends="jars,gwt-compile">
 	-->
-	<target name="war" description="It creates the war file">
+	<target name="war" depends="jars" description="It creates the war file">
 		<war destfile="${CombiModelWeb.war}" webxml="${CombiModelWeb.config}/web.xml">
 			<fileset dir="${CombiModelWeb.dir}/static-web" />
 			<fileset dir="${CombiModelWeb.build}">
@@ -159,7 +196,7 @@
 		</war>
 	</target>
 	
-	<target name="makedist" depends="jars,gwt-compile,war" description="It compiles everything" />
+	<target name="makedist" depends="gwt-compile,war" description="It compiles everything" />
 	
 	<target name="clean" description="It cleans up CombiModelWeb compilation">
 		<delete dir="${CombiModelWeb.build}" failonerror="false" />
