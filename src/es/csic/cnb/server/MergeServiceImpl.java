@@ -329,7 +329,7 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
 
             if (generic) {
               if (!mmIdList.contains(r.getId())) {
-		KineticLaw kl = r.getKineticLaw();
+		KineticLaw kl = r.isSetKineticLaw() ? r.getKineticLaw() : r.createKineticLaw();
 		if(kl != null) {
 			kl.getLocalParameter("LOWER_BOUND").setValue(0.0);
 		}

@@ -153,7 +153,7 @@ public class DefaultMinMedia {
         }
 
       if (exchange) {
-	KineticLaw kl = r.getKineticLaw();
+	KineticLaw kl = r.isSetKineticLaw() ? r.getKineticLaw() : r.createKineticLaw();
 	if(kl!=null) {
 		if (!mmedia) {
 		  kl.getLocalParameter("LOWER_BOUND").setValue(0.0);
