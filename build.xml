@@ -21,6 +21,7 @@
 	<property name="CombiModelWeb.config" location="${CombiModelWeb.dir}/config"/>
 	<property name="CombiModelWeb.src" location="${CombiModelWeb.dir}/src" />
 	<property name="CombiModelWeb.test" location="${CombiModelWeb.dir}/test" />
+	<property name="CombiModel.server-scripts" location="${CombiModelWeb.dir}/server-scripts" />
 	<property name="CombiModelWeb.build" location="${CombiModelWeb.dir}/war" />
 	<property name="CombiModelWeb.build.classes" location="${CombiModel.build}/WEB-INF/classes" />
 	<property name="CombiModelWeb.libs" location="${CombiModelWeb.dir}/lib" />
@@ -192,6 +193,10 @@
 			<lib dir="${CombiModelWeb.staticLibs}" />
 			<lib dir="${CombiModel.dist.libs}" />
 			<lib file="${CombiModel.jar}"/>
+			<lib dir="${CombiModel.server-scripts}">
+				<include name="perl/**" />
+				<include name="sh/**" />
+			</lib>
 			<classes dir="${CombiModelWeb.build.classes}" />
 		</war>
 	</target>
