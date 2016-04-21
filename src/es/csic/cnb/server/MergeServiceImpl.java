@@ -64,6 +64,9 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
   // Hash with the session-ids and the status associated
   private Map<String, JobStatus> statusList = new HashMap<String, JobStatus>();
 
+
+	private final static String OUTPUT_DIR = "output";
+	
   @Override
   public ClientData run(String sessionId, ClientData cdata) throws ServerException {
     List<ModelData> modelDataList = cdata.getModelDataList();
@@ -117,9 +120,9 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
     boolean useMinMedia = false; // true en basic minmedia e intersection minmedia
 
     // Crear directorio de trabajo
-    File dir = new File(rootPath, "output");
+    File dir = new File(rootPath, OUTPUT_DIR);
     dir = new File(dir, sessionId);
-    dir.mkdir();
+    dir.mkdirs();
 
     File idxHtml = new File(dir, "index.html");
 
@@ -408,7 +411,7 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
         zipName = createZip(sessionId, dir, modelDataList.get(0).getFilepath(), info);
 
         // Actualizar html
-        String path = baseUrl + "/output/" + sessionId + "/" + zipName;
+        String path = baseUrl + "/" + OUTPUT_DIR + "/" + sessionId + "/" + zipName;
 
         // TODO Cambiar 72 por dato del properties (schedule.limit.hours)
         StringBuilder okhtml = new StringBuilder();
@@ -493,7 +496,9 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
 
     // Create the ZIP file
     //String outputPath = "/output/" + "cmodel-"+ sessionId +".zip";
-    String zipName = "/cmodel-"+ sessionId +".zip";
+    String zipName = "cmodel-"+ sessionId +".zip";
+    // Assuring the route does exist
+    dir.mkdirs();
     ZipOutputStream out = new ZipOutputStream(new FileOutputStream(new File(dir, zipName)));
 
     // Add ZIP entry to output stream.
