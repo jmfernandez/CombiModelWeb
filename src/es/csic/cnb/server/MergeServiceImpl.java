@@ -275,22 +275,19 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
       log.info("Perl process");
       
       PerlWrapper perlw = new PerlWrapper(properties, status);
-      String cmodel = perlw.runMergeModels(modelList, useMinMedia, cdata.isNewobj());
-      info.put("CMODEL", cmodel);
-
-      // Shell Script (Solo si hay que calcular el medio minimo del modelo combinado)
-      if (mm == ClientData.COMBIMM) {
-    	log.info("Shell Script: calculate combined model minimum media");
-    	  
         // Crear fichero cmodel
         String cmodelFilename = "cmodel-"+ sessionId +".xml";
         File cmodelFile = new File(modelDataList.get(0).getFilepath());
         cmodelFile = new File(cmodelFile.getParentFile(), cmodelFilename);
 
-        try {
-          // Volcar el contenido de txt al fichero
-          FileUtils.writeStringToFile(cmodelFile, cmodel);
+      String cmodel = perlw.runMergeModels(modelList, useMinMedia, cdata.isNewobj(),cmodelFile);
+      info.put("CMODEL", cmodelFile.getAbsolutePath());
 
+      // Shell Script (Solo si hay que calcular el medio minimo del modelo combinado)
+      if (mm == ClientData.COMBIMM) {
+    	log.info("Shell Script: calculate combined model minimum media");
+    	  
+        try {
           ShWrapper shw = new ShWrapper(properties, status);
           String mmfile = cmodelFilename.replace(".xml", ".minmedia_ul");
 
@@ -340,8 +337,7 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
             }
           }
           SBMLWriter wr = new SBMLWriter();
-          cmodel = wr.writeSBMLToString(cdoc);
-          info.put("CMODEL", cmodel);
+          wr.writeSBML(cdoc,cmodelFile);
 
         } catch (IOException e) {
           log.log(Level.SEVERE, logId + "An error occurred while attempting to read the minmedia file", e);
@@ -482,14 +478,12 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
   //}
 
   private String createZip(String sessionId, File dir, String path, Map<String, CharSequence> info) throws IOException {
-    String filename = "cmodel-"+ sessionId +".xml";
-    File cmodelFile = new File(path);
-    cmodelFile = new File(cmodelFile.getParentFile(), filename);
+    File cmodelFile = new File(info.get("CMODEL").toString());
+    String filename = cmodelFile.getName();
+    // Volcar el contenido de txt al fichero
     
     log.info("Create zip: " + filename);
 
-    // Volcar el contenido de txt al fichero
-    FileUtils.writeStringToFile(cmodelFile, info.get("CMODEL").toString());
 
     // Create a buffer for reading the files
     byte[] buf = new byte[1024];

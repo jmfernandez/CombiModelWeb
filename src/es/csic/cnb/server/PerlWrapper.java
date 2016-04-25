@@ -28,7 +28,7 @@ public class PerlWrapper {
 
   private Properties properties;
   private JobStatus status;
-  private String perlPath;
+  private File perlPath;
 
   private ProcessBuilder pb;
 
@@ -37,17 +37,16 @@ public class PerlWrapper {
     this.status = status;
 
     String rootPath = properties.getProperty("rootpath");
-    perlPath = rootPath + "WEB-INF/lib/perl/";
+    perlPath = new File(new File(new File(rootPath,"WEB-INF"),"lib"),"perl");
 
     pb = new ProcessBuilder();
-    pb.redirectErrorStream(true);
   }
 
-  public String runMergeModels(List<File> modelList, boolean mimedia, boolean newobj) throws ServerException {
+  public String runMergeModels(List<File> modelList, boolean mimedia, boolean newobj, File outputFile) throws ServerException {
     // Create commands
     List<String> commandList = new ArrayList<String>();
     commandList.add(properties.getProperty("perl", PERL));
-    commandList.add(perlPath + "genreac2.pl");
+    commandList.add((new File(perlPath,"genreac2.pl")).getAbsolutePath());
     if (mimedia) {
       commandList.add("-minmedia");
     }
@@ -60,7 +59,8 @@ public class PerlWrapper {
     
     //System.out.println("---> " + commandList);
     log.fine("Perl command: " + commandList);
-
+    
+    pb.redirectOutput(outputFile);
     pb.command(commandList);
 
     StringBuilder sb = new StringBuilder();
@@ -73,7 +73,7 @@ public class PerlWrapper {
       // Ejecutar el programa externo
       pr = pb.start();
 
-      br = new BufferedReader(new InputStreamReader(pr.getInputStream()), BUFFER_SIZE);
+      br = new BufferedReader(new InputStreamReader(pr.getErrorStream()), BUFFER_SIZE);
       String line;
       while ((line = br.readLine()) != null) {
         sb.append(line).append(NEWLINE);
