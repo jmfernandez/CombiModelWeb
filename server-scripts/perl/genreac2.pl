@@ -1,359 +1,422 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 #-- Combina modelos metabolicos
 #-- Esta version incluye la busqueda y ajuste de reacciones de biomasa
 
 #-- Javier Tamames, Mayo 2012
+use strict;
 
 use Data::Dumper;
 
+use XML::LibXML::Reader;
+use XML::Writer;
+
+########################
+# Function definitions #
+########################
+sub extractReactions($$\%\%\%\%\%\%\%\%);
+sub minmedia($$\%);
+sub metab(\%\%\%);
+sub reacs($$\%\%\%\%\%\%\%);
+sub objective($$\%\%\%\%\%);
+sub rxnDuplicadas(\%\%\%);
+sub writeModel($\%\%\%\%\%\%);
+
+{
 $| = 1;
 
 my %attTable = (); # Atributos (ph, coef) de cada modelo
 
-$minmediasw   = 0;    #-- A uno, ajusta el medio a la composicion de los medios minimos de cada componente
-$newobjective = 0;    #-- A uno, elimina las reacciones objetivo iniciales y crea una nueva
+my $minmediasw   = 0;    #-- A uno, ajusta el medio a la composicion de los medios minimos de cada componente
+my $newobjective = 0;    #-- A uno, elimina las reacciones objetivo iniciales y crea una nueva
+my $namemodel = '';
+my $nummodel = 0;
+
+my %ctoTable = (); # Compartimentos y la abb a usar
+my %ctoName = (); # Nombres de compartimentos
+my %joinreactions = ();
+my %outcompart = ();
+my %compounds = ();
+my %reactions = ();
+my %compreactions = ();
+my %biomass = ();
+my %joincompounds = ();
+my %allcomparts = ();
+my %joincompreactions = ();
+my %minreac = ();
 
 for my $models (@ARGV) {
-	if ( $models =~ /^-minmedia$/ ) {
+	if ( $models eq '-minmedia' ) {
 		$minmediasw = 1;
-	}
-	elsif ( $models =~ /^-newobj$/ ) {
+	} elsif ( $models eq '-newobj' ) {
 		$newobjective = 1;
-	}
-	else {
+	} else {
 		$nummodel++;
 		$namemodel .= "$nummodel: $models; ";
-		extractReactions( $models, $nummodel );    #-- Lectura de modelos y almacenamiento de componentes
-		if ($minmediasw) { minmedia( $models, $nummodel ); }    #-- Lectura de medios minimos (ya generados por minmedia.m)
+		extractReactions( $models, $nummodel, %attTable, %ctoTable, %ctoName, %outcompart, %compounds , %reactions , %compreactions, %biomass );    #-- Lectura de modelos y almacenamiento de componentes
+		if ($minmediasw) { minmedia( $models, $nummodel, %minreac); }    #-- Lectura de medios minimos (ya generados por minmedia.m)
 	}
 }
 
-metab();                                                    #-- Normalizacion de compuestos
-reacs();                                                    #-- Normalizacion de reacciones
-objective($nummodel);                                       #-- Aniade una nueva reaccion objetivo
+#-- Normalizacion de compuestos
+metab(%compounds,%joincompounds,%allcomparts);
+#-- Normalizacion de reacciones
+reacs($newobjective,$minmediasw,%compounds,%reactions,%biomass,%compreactions,%joincompreactions,%minreac,%joinreactions);
+#-- Aniade una nueva reaccion objetivo
+objective($nummodel,$newobjective,%attTable,%biomass,%joincompounds,%joinreactions,%joincompreactions);
 
 # Obtener identificadores de reacciones a eliminar (estan duplicadas)
-my @todelete = rxnDuplicadas();
+my @todelete = rxnDuplicadas(%compounds,%compreactions,%minreac);
 # Eliminar de %joinreactions
 foreach my $id (@todelete) {
 	delete $joinreactions{$id};
 }
 
-writeModel();                                               #-- Salida
-
-
-my %ctoTable = (); # Compartimentos y la abb a usar
-
-sub extractReactions {
-	open( IN, $_[0] );
-	$model          = $_[1];
-	$reactionId     = "";
-	$reactionName   = "";
-	$reactorproduct = "";
-	while (<IN>) {
-		chomp;
-		next if !$_;
-		my $line = $_;
-		$line =~ s/\t//g;
-		$line =~ s/\s+/ /g;
-
-		# Recuperar atributos del modelo (o valores por defecto si no existen)
-		if ($line =~ /^[\s*]?<sbml\s+(?=.*ph=\"([^"]*)\")?(?=.*coef=\"([^"]*)\")?/) {
-			my $ph = ($1) ? $1 : "7.2";
-			my $coef = ($2) ? $2 : "1";
-
-			$attTable{$model}{PH} = $ph;
-			$attTable{$model}{COEF} = $coef;
-		}
-
-		if ( $line =~ /^[\s*]?<compartment\s+id=\"([^"]*)\"(?=.*outside=\"([^"]*)\")?(?=.*name=\"([^"]*)\")?/ ) {
-
-#			#my($ffw,$ssw)=split(/\_/,$1);
-#			#if($ssw) { $iwd=$ssw; } else { $iwd=$ffw; }
-#			$iwd = $1;print "iwd $iwd\n";
-#			$iwd =~ s/\_//g;print "iwd $iwd\n";
-#			$abcomp = substr( $iwd, 0, 1 );print "abcomp $abcomp\n";
-#			$abcomp =~ tr/A-Z/a-z/;print "abcomp $abcomp\n";
-#			$outcomp = substr( $2, 0, 1 );print "outcomp $outcomp\n";
-#			$outcomp =~ tr/A-Z/a-z/;print "outcomp $outcomp\n";
-#			if ( $abcomp ne "e" ) {
-#				$incm = "$abcomp\_$model";print "incm $incm\n";
-#				if   ( $outcomp ne "e" ) { $outcm = "$outcomp\_$model";print "outcm $outcm\n"; }
-#				else                     { $outcm = $outcomp;print "outcm $outcm\n"; }
-#				$outcompart{$incm} = $outcm;
-#			}
-#			print Dumper {%outcompart};
-
-			#-- MODIFICACION PDSANCHEZ 20/12/2012
-			# Modificar para evitar errores por compartimentos del tipo C_e C_c
-			my $ctoId = $1;
-			my $abb;
-			if ($ctoId =~ /ext|out|^e$|_e$/i) {
-				$abb = "e";
-			}
-			elsif ($ctoId =~ /cytosol|^c$|_c$|int/i) {
-				$abb = "c_$model";
-			}
-			#-- MODIFICACION PDSANCHEZ 02/2016
-			# i --> intracelular => crear c
-			elsif ($ctoId =~ /^i$|int/i) {
-				$abb = "c_$model";
-				$ctoTable{$model}{"c"}{ABB} = $abb;
-			}
-			#-- FIN MODIFICACION 02/2016
-			else {
-				$abb = "x_$model";
-			}
-			$ctoTable{$model}{$ctoId}{ABB} = $abb;
-
-			my $outside = $2;
-			if ($outside) {
-				if ($outside =~ /ext|out|^e$|_e$/i) {
-					$outcompart{$abb} = "e";
-				}
-				else {
-					$outcompart{$abb} = "$outside\_$model";
-				}
-			}
-			else {
-				$outcompart{$abb} = undef;
-			}
-			#-- FIN MODIFICACION PDSANCHEZ 20/12/2012
-		}
-
-		if ( $line =~ /^[\s*]?\<species id=\"([^"]*)\"(?=.*name=\"([^"]*)\")?(?=.*compartment=\"([^"]*)\")(?=.*charge=\"([^"]*)\")?(?=.*boundaryCondition=\"([^"]*)\")?/ ) {
-			$coid    = $1;
-			$coname  = $2;
-			$compart = $3;
-			$tcharge = $4;
-			$tboun   = $5;
-
-			# if($model>0) { print "$_\n"; }
-			#Sacamos formula quimica del nombre
-			my @cp_parts = split( /\_/, $coname );
-			my $compoundFormula = "";
-			foreach my $cp_part (@cp_parts) {
-				$compoundFormula = $cp_part;
-			}
-
-			#-- MODIFICACION PDSANCHEZ 20/12/2012
-#			#  my($ffw,$ssw)=split(/\_/,$compart);
-#			#  if($ssw) { $iwd=$ssw; } else { $iwd=$ffw; }
-#			$iwd = $compart;
-#			$iwd =~ s/\_//g;
-#
-#			$abcompart = substr( $iwd, 0, 1 );
-#			$abcompart =~ tr/A-Z/a-z/;
-
-			my $abcompart = $ctoTable{$model}{$compart}{ABB};
-			#-- FIN MODIFICACION PDSANCHEZ 20/12/2012
-
-			# my $crea =$dbh->do("INSERT INTO compounds values(\"$1\",\"$compoundFormula\",\"$3\",\"$model\",\"$2\",\"$4\",\"$5\");");
-			$compounds{$coid}{$model}{formula}     = $compoundFormula;
-			$compounds{$coid}{$model}{compartment} = $abcompart;
-			$compounds{$coid}{$model}{name}        = $coname;
-			$compounds{$coid}{$model}{charge}      = $tcharge;
-			$compounds{$coid}{$model}{boundary}    = $tboun;
-
-			# print "*$coid*$model*$coname*$compounds{$1}{$model}{compartment}*\n";
-		}
-		elsif ( $line =~ /^[\s*]?\<reaction id=\"([^"]*)\"\s+name=\"([^"]*)\"(?=.*reversible=\"([^"]*)\")?(?=.*metaid=\"([^"]*)\")?/ ) {
-			$reactionId                                    = $1;
-			$reactionName                                  = $2;
-			$reactions{$reactionId}{$model}{reactionname}  = $reactionName;
-			$reactions{$reactionId}{$model}{reversibility} = $3;
-		}
-		elsif ( $line =~ /^[\s*]?\<listOfReactants/ ) {
-			$reactorproduct = "react";
-		}
-		elsif ( $line =~ /^[\s*]?\<listOfProducts/ ) {
-			$reactorproduct = "product";
-		}
-		elsif ( $line =~ /^[\s*]?<parameter\s+id=\"([^"]*)\"(?=.*value=\"([^"]*)\")/ ) {
-			my $parameter_value = $2;
-			if    ( $1 =~ /LOWER_BOUND/ ) { $reactions{$reactionId}{$model}{lowerbound} = $parameter_value; }
-			elsif ( $1 =~ /UPPER_BOUND/ ) { $reactions{$reactionId}{$model}{upperbound} = $parameter_value; }
-			elsif ( $1 =~ /OBJECTIVE_COEFFICIENT/ ) {
-				$reactions{$reactionId}{$model}{objectcoef} = $parameter_value;
-				if ( $parameter_value > 0 ) { $objectivereact{$model}{$reactionId} = $parameter_value; }
-			}
-			elsif ( $1 =~ /FLUX_VALUE/ ) {
-				$reactions{$reactionId}{$model}{fluxvalue} = $parameter_value;
-			}
-		}
-		elsif ( $line =~ /^[\s*]?\<speciesReference\s+species=\"([^"]*)\"(?=.*stoichiometry=\"([^"]*)\")?/ ) {
-
-			$compreactions{$reactionId}{$model}{$reactorproduct}{$1} = $2;
-		}
-		elsif ( $line =~ /^[\s*]?\<\/reaction/ ) {
-			if ( $objectivereact{$model}{$reactionId} ) {    #-- Vamos a buscar si hay termino de biomasa
-				foreach my $prods ( keys %{ $compreactions{$reactionId}{$model}{product} } ) {
-					$comname = $compounds{$prods}{$model}{name};
-
-					#-- MODIFICACION PDSANCHEZ 18/12/2012
-					# Guardar id en lugar del nombre
-					#if ( $comname =~ /biomass/i ) { $biomass{$model} = $comname; }
-					if ( $comname =~ /biomass/i ) {
-						$biomass{$model}{product} = $prods;
-
-						my $prd = $prods;
-						$prd =~ s/_[a-z]$/_b/;
-						if (exists $compounds{$prd}) {
-							$biomass{UNIQUE_ID}{$prd}++;
-						}
-						else {
-							$biomass{NON_UNIQUE_ID}{$prods}++;
-						}
-						$biomass{RX_ID}{$reactionId."_".$model}++;
-					}
-					#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
-
-				}
-				#-- MODIFICACION PDSANCHEZ 18/12/2012
-				# Incluir reactantes
-				foreach my $react ( keys %{ $compreactions{$reactionId}{$model}{react} } ) {
-					$comname = $compounds{$react}{$model}{name};
-
-					#-- MODIFICACION PDSANCHEZ 18/12/2012
-					# Guardar id en lugar del nombre
-					#if ( $comname =~ /biomass/i ) { $biomass{$model} = $comname; }
-					if ( $comname =~ /biomass/i ) {
-						$biomass{$model}{react} = $react;
-
-						my $prd = $react;
-						$prd =~ s/_[a-z]$/_b/;
-						if (exists $compounds{$prd}) {
-							$biomass{UNIQUE_ID}{$prd}++;
-						}
-						else {
-							$biomass{NON_UNIQUE_ID}{$react}++;
-						}
-						$biomass{RX_ID}{$reactionId."_".$model}++;
-					}
-					#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
-
-				}
-
-				#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
-
-				if ( !$biomass{$model} ) {                     #-- Si no lo hay, se aniade
-				  #-- MODIFICACION PDSANCHEZ 18/12/2012
-				  # Crear el mismo id para todos los modelos
-					#$bterm                                               = "biomass$model\_c";
-					#$biomass{$model}                                     = $bterm;
-					#$compreactions{$reactionId}{$model}{product}{$bterm} = 1;
-					#$compounds{$bterm}{$model}{compartment}              = "c";
-					#$compounds{$bterm}{$model}{name}                     = $bterm;
-					#$compounds{$bterm}{$model}{charge}                   = 0;
-					#$compounds{$bterm}{$model}{boundary}                 = "false";
-
-					$bterm                                               = "biomass_c";
-					$biomass{$model}                                     = $bterm;
-					$compreactions{$reactionId}{$model}{product}{$bterm} = 1;
-					$compounds{$bterm}{$model}{compartment}              = "c";
-					$compounds{$bterm}{$model}{name}                     = "biomass$model\_c";
-					$compounds{$bterm}{$model}{charge}                   = 0;
-					$compounds{$bterm}{$model}{boundary}                 = "false";
-					$biomass{NON_UNIQUE_ID}{$bterm}++;
-					#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
-				}
-			}
-			$reactionId     = "";
-			$reactionName   = "";
-			$reactorproduct = "";
-		}
-	}
-	#print Dumper {%biomass};
+writeModel($namemodel,%allcomparts,%outcompart,%joincompounds,%joinreactions,%joincompreactions,%ctoName);                                               #-- Salida
+exit(0);
 }
 
-sub metab {
-	foreach my $comps ( sort keys %compounds ) {
-		foreach my $inmodel ( sort keys %{ $compounds{$comps} } ) {
+########################
+# Function definitions #
+########################
+sub extractReactions($$\%\%\%\%\%\%\%\%) {
+	my($modelFile,$model,$p_attTable,$p_ctoTable,$p_ctoName,$p_outcompart,$p_compounds,$p_reactions,$p_compreactions, $p_biomass) = @_;
+	
+	if(my $MR = XML::LibXML::Reader->new(location => $modelFile)) {
+		if($MR->read() && $MR->localName() eq 'sbml') {
+			# Let's save this, so the read is focused on this namespace
+			my $SBMLnamespace = $MR->namespaceURI();
+			
+			my $reactionId     = undef;
+			my $reactionName   = "";
+			my $reactorproduct = "";
+			my %objectivereact = ();
+			
+			my $numUnknown = 0;
+
+			my $finishedReaction = sub() {
+				if (defined($reactionId) && $objectivereact{$model}{$reactionId} ) {    #-- Vamos a buscar si hay termino de biomasa
+					foreach my $prods ( keys %{ $p_compreactions->{$reactionId}{$model}{product} } ) {
+						my $comname = $p_compounds->{$prods}{$model}{name};
+
+						#-- MODIFICACION PDSANCHEZ 18/12/2012
+						# Guardar id en lugar del nombre
+						#if ( $comname =~ /biomass/i ) { $p_biomass->{$model} = $comname; }
+						if ( $comname =~ /biomass/i ) {
+							$p_biomass->{$model}{product} = $prods;
+
+							my $prd = $prods;
+							$prd =~ s/_[a-z]$/_b/;
+							if (exists $p_compounds->{$prd}) {
+								$p_biomass->{UNIQUE_ID}{$prd}++;
+							}
+							else {
+								$p_biomass->{NON_UNIQUE_ID}{$prods}++;
+							}
+							$p_biomass->{RX_ID}{$reactionId."_".$model}++;
+						}
+						#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
+
+					}
+					#-- MODIFICACION PDSANCHEZ 18/12/2012
+					# Incluir reactantes
+					foreach my $react ( keys %{ $p_compreactions->{$reactionId}{$model}{react} } ) {
+						my $comname = $p_compounds->{$react}{$model}{name};
+
+						#-- MODIFICACION PDSANCHEZ 18/12/2012
+						# Guardar id en lugar del nombre
+						#if ( $comname =~ /biomass/i ) { $p_biomass->{$model} = $comname; }
+						if ( $comname =~ /biomass/i ) {
+							$p_biomass->{$model}{react} = $react;
+
+							my $prd = $react;
+							$prd =~ s/_[a-z]$/_b/;
+							if (exists $p_compounds->{$prd}) {
+								$p_biomass->{UNIQUE_ID}{$prd}++;
+							}
+							else {
+								$p_biomass->{NON_UNIQUE_ID}{$react}++;
+							}
+							$p_biomass->{RX_ID}{$reactionId."_".$model}++;
+						}
+						#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
+
+					}
+
+					#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
+
+					if (!exists($p_biomass->{$model})) {                     #-- Si no lo hay, se aniade
+					  #-- MODIFICACION PDSANCHEZ 18/12/2012
+					  # Crear el mismo id para todos los modelos
+						#my $bterm                                               = "biomass$model\_c";
+						#$p_biomass->{$model}                                     = $bterm;
+						#$p_compreactions->{$reactionId}{$model}{product}{$bterm} = 1;
+						#$p_compounds->{$bterm}{$model}{compartment}              = "c";
+						#$p_compounds->{$bterm}{$model}{name}                     = $bterm;
+						#$p_compounds->{$bterm}{$model}{charge}                   = 0;
+						#$p_compounds->{$bterm}{$model}{boundary}                 = "false";
+
+						my $bterm                                               = "biomass_c";
+						$p_biomass->{$model}                                     = $bterm;
+						$p_compreactions->{$reactionId}{$model}{product}{$bterm} = 1;
+						$p_compounds->{$bterm}{$model}{compartment}              = "c";
+						$p_compounds->{$bterm}{$model}{name}                     = "biomass$model\_c";
+						$p_compounds->{$bterm}{$model}{charge}                   = 0;
+						$p_compounds->{$bterm}{$model}{boundary}                 = "false";
+						$p_biomass->{NON_UNIQUE_ID}{$bterm}++;
+						#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
+					}
+				}
+				$reactionId     = undef;
+				$reactionName   = "";
+				$reactorproduct = "";
+			};
+			
+			# Recuperar atributos del modelo (o valores por defecto si no existen)
+			my $ph = $MR->getAttribute('ph');
+			$ph = "7.2"  unless(defined('ph'));
+			my $coef = $MR->getAttribute('coef');
+			$coef = "1"  unless(defined($coef));
+
+			$p_attTable->{$model}{PH} = $ph;
+			$p_attTable->{$model}{COEF} = $coef;
+			
+			# Now, let's get the list of compartments, species, etc...
+			my $pat = XML::LibXML::Pattern->new('//s:listOfCompartments/s:compartment|//s:listOfSpecies/s:species|//s:listOfReactions/s:reaction|//s:reaction/s:listOfReactants|//s:reaction/s:listOfProducts|//s:reaction/s:kineticLaw/s:listOfParameters',{ 's' => $SBMLnamespace });
+			my $patsr = XML::LibXML::Pattern->new('./s:speciesReference',{ 's' => $SBMLnamespace });
+			my $patpar = XML::LibXML::Pattern->new('./s:parameter',{ 's' => $SBMLnamespace });
+			while($MR->nextPatternMatch($pat)) {
+				my $localName = $MR->localName();
+				
+				if($localName eq 'compartment') {
+		#			#my($ffw,$ssw)=split(/\_/,$1);
+		#			#if($ssw) { $iwd=$ssw; } else { $iwd=$ffw; }
+		#			$iwd = $1;print "iwd $iwd\n";
+		#			$iwd =~ s/\_//g;print "iwd $iwd\n";
+		#			$abcomp = substr( $iwd, 0, 1 );print "abcomp $abcomp\n";
+		#			$abcomp =~ tr/A-Z/a-z/;print "abcomp $abcomp\n";
+		#			$outcomp = substr( $2, 0, 1 );print "outcomp $outcomp\n";
+		#			$outcomp =~ tr/A-Z/a-z/;print "outcomp $outcomp\n";
+		#			if ( $abcomp ne "e" ) {
+		#				$incm = "$abcomp\_$model";print "incm $incm\n";
+		#				if   ( $outcomp ne "e" ) { $outcm = "$outcomp\_$model";print "outcm $outcm\n"; }
+		#				else                     { $outcm = $outcomp;print "outcm $outcm\n"; }
+		#				$p_outcompart->{$incm} = $outcm;
+		#			}
+		#			print Dumper {%outcompart};
+
+					#-- MODIFICACION PDSANCHEZ 20/12/2012
+					# Modificar para evitar errores por compartimentos del tipo C_e C_c
+					my $ctoId = $MR->getAttribute('id');
+					my $ctoName = $MR->getAttribute('name');
+					$ctoName = $ctoId  unless(defined($ctoName));
+					my $abb;
+					if ($ctoId =~ /ext|out|^e$|_e$/i) {
+						$abb = "e";
+					}
+					elsif ($ctoId =~ /cytosol|^c$|_c$|int/i) {
+						$abb = "c_$model";
+					}
+					#-- MODIFICACION PDSANCHEZ 02/2016
+					# i --> intracelular => crear c
+					elsif ($ctoId =~ /^i$|int/i) {
+						$abb = "c_$model";
+						$p_ctoTable->{$model}{"c"}{ABB} = $abb;
+					}
+					#-- FIN MODIFICACION 02/2016
+					else {
+						# There could be more than one unknown
+						$abb = "x${numUnknown}_${model}";
+						$numUnknown++;
+					}
+					$p_ctoTable->{$model}{$ctoId}{ABB} = $abb;
+					$p_ctoName->{$model}{$abb} = $ctoName;
+					
+					my $outside = $MR->getAttribute('outside');
+					if (defined($outside)) {
+						if ($outside =~ /ext|out|^e$|_e$/i) {
+							$p_outcompart->{$abb} = "e";
+						} else {
+							$p_outcompart->{$abb} = "$outside\_$model";
+						}
+					} else {
+						$p_outcompart->{$abb} = undef;
+					}
+					#-- FIN MODIFICACION PDSANCHEZ 20/12/2012
+				} elsif($localName eq 'species') {
+					my $coid    = $MR->getAttribute('id');
+					my $coname  = $MR->getAttribute('name');
+					my $compart = $MR->getAttribute('compartment');
+					my $tcharge = $MR->getAttribute('charge');
+					my $tboun   = $MR->getAttribute('boundaryCondition');
+
+					# if($model>0) { print "$_\n"; }
+					#Sacamos formula quimica del nombre
+					my $compoundFormula = "";
+					if(defined($coname)) {
+						my @cp_parts = split( /\_/, $coname );
+						foreach my $cp_part (@cp_parts) {
+							$compoundFormula = $cp_part;
+						}
+					}
+
+					#-- MODIFICACION PDSANCHEZ 20/12/2012
+		#			#  my($ffw,$ssw)=split(/\_/,$compart);
+		#			#  if($ssw) { $iwd=$ssw; } else { $iwd=$ffw; }
+		#			$iwd = $compart;
+		#			$iwd =~ s/\_//g;
+		#
+		#			$abcompart = substr( $iwd, 0, 1 );
+		#			$abcompart =~ tr/A-Z/a-z/;
+
+					my $abcompart = $p_ctoTable->{$model}{$compart}{ABB};
+					#-- FIN MODIFICACION PDSANCHEZ 20/12/2012
+
+					# my $crea =$dbh->do("INSERT INTO compounds values(\"$1\",\"$compoundFormula\",\"$3\",\"$model\",\"$2\",\"$4\",\"$5\");");
+					$p_compounds->{$coid}{$model}{formula}     = $compoundFormula;
+					$p_compounds->{$coid}{$model}{compartment} = $abcompart;
+					$p_compounds->{$coid}{$model}{name}        = $coname;
+					$p_compounds->{$coid}{$model}{charge}      = $tcharge;
+					$p_compounds->{$coid}{$model}{boundary}    = $tboun;
+					# print "*$coid*$model*$coname*$p_compounds->{$1}{$model}{compartment}*\n";
+				} elsif($localName eq 'reaction') {
+					$finishedReaction->();
+					
+					$reactionId                                    = $MR->getAttribute('id');
+					$reactionName                                  = $MR->getAttribute('name');
+					$p_reactions->{$reactionId}{$model}{reactionname}  = $reactionName;
+					$p_reactions->{$reactionId}{$model}{reversibility} = $MR->getAttribute('reversible');
+				} elsif($localName eq 'listOfReactants' || $localName eq 'listOfProducts') {
+					my $reactorproduct = $localName eq 'listOfReactants' ? 'react' : 'product';
+					if($MR->nextPatternMatch($patsr)) {
+						do {
+							$p_compreactions->{$reactionId}{$model}{$reactorproduct}{$MR->getAttribute('species')} = $MR->getAttribute('stoichiometry');
+						} while($MR->nextSiblingElement('speciesReference',$SBMLnamespace));
+					}
+				} elsif($localName eq 'listOfParameters') {
+					if($MR->nextPatternMatch($patpar)) {
+						do {
+							my $parameter_id = $MR->getAttribute('id');
+							my $parameter_value = $MR->getAttribute('value');
+							if    ( $parameter_id =~ /LOWER_BOUND/ ) { $p_reactions->{$reactionId}{$model}{lowerbound} = $parameter_value; }
+							elsif ( $parameter_id =~ /UPPER_BOUND/ ) { $p_reactions->{$reactionId}{$model}{upperbound} = $parameter_value; }
+							elsif ( $parameter_id =~ /OBJECTIVE_COEFFICIENT/ ) {
+								$p_reactions->{$reactionId}{$model}{objectcoef} = $parameter_value;
+								if ( $parameter_value > 0 ) { $objectivereact{$model}{$reactionId} = $parameter_value; }
+							}
+							elsif ( $parameter_id =~ /FLUX_VALUE/ ) {
+								$p_reactions->{$reactionId}{$model}{fluxvalue} = $parameter_value;
+							}
+						} while($MR->nextSiblingElement('parameter',$SBMLnamespace));
+					}
+				}
+			}
+			
+			$finishedReaction->();
+			#print Dumper {%{$p_biomass}};
+		}
+		$MR->finish();
+	} else {
+		die "ERROR: Unable to extract reactions from $modelFile\n";
+	}
+}
+
+sub metab(\%\%\%) {
+	my($p_compounds,$p_joincompounds,$p_allcomparts)=@_;
+	
+	foreach my $comps ( sort keys %{$p_compounds} ) {
+		foreach my $inmodel ( sort keys %{ $p_compounds->{$comps} } ) {
+			my $newcompart = $p_compounds->{$comps}{$inmodel}{compartment};
+			my $newid;
 			#-- MODIFICACION PDSANCHEZ 20/12/2012
-			if   ( $compounds{$comps}{$inmodel}{compartment} ne "e" ) {
+			if   ( $p_compounds->{$comps}{$inmodel}{compartment} ne "e" ) {
 				$newid = "$comps\_$inmodel";
-				#$newcompart = "$compounds{$comps}{$inmodel}{compartment}\_$inmodel";
+				#$newcompart = "$p_compounds->{$comps}{$inmodel}{compartment}\_$inmodel";
 			}
 			else {
 				$newid = $comps;
-				#$newcompart = "$compounds{$comps}{$inmodel}{compartment}";
+				#$newcompart = "$p_compounds->{$comps}{$inmodel}{compartment}";
 			}
-			$newcompart = "$compounds{$comps}{$inmodel}{compartment}";
 			#-- FIN MODIFICACION PDSANCHEZ 20/12/2012
 
 			# $newid="$comps\_$inmodel";
-			$joincompounds{$newid}{compartment} = $newcompart;
-			$joincompounds{$newid}{formula}     = $compounds{$comps}{$inmodel}{formula};
-			$joincompounds{$newid}{name}        = $compounds{$comps}{$inmodel}{name};
-			$joincompounds{$newid}{charge}      = $compounds{$comps}{$inmodel}{charge};
-			$joincompounds{$newid}{boundary}    = $compounds{$comps}{$inmodel}{boundary};
-			$allcomparts{$newcompart}++;
+			$p_joincompounds->{$newid}{compartment} = $newcompart;
+			$p_joincompounds->{$newid}{formula}     = $p_compounds->{$comps}{$inmodel}{formula};
+			$p_joincompounds->{$newid}{name}        = $p_compounds->{$comps}{$inmodel}{name};
+			$p_joincompounds->{$newid}{charge}      = $p_compounds->{$comps}{$inmodel}{charge};
+			$p_joincompounds->{$newid}{boundary}    = $p_compounds->{$comps}{$inmodel}{boundary};
+			$p_allcomparts->{$newcompart}++;
 		}
 
 		#-- Faltan por ajustar las boundaries para extracelulares, tomara las del ultimo leido
 	}
 }
 
-sub reacs {
-	foreach my $reac ( sort keys %reactions ) {
-		foreach my $inmodel ( sort keys %{ $reactions{$reac} } ) {
-			$generic = 1;
-			foreach my $prods ( sort keys %{ $compreactions{$reac}{$inmodel} } ) {
-				foreach my $compinrec ( sort keys %{ $compreactions{$reac}{$inmodel}{$prods} } ) {
-					if ( $compounds{$compinrec}{$inmodel}{compartment} ne "e" ) { $generic = 0; }
+sub reacs($$\%\%\%\%\%\%\%) {
+	my($newobjective,$minmediasw,$p_compounds,$p_reactions,$p_biomass,$p_compreactions,$p_joincompreactions,$p_minreac,$p_joinreactions) = @_;
+	foreach my $reac ( sort keys %{$p_reactions} ) {
+		foreach my $inmodel ( sort keys %{ $p_reactions->{$reac} } ) {
+			my $generic = 1;
+			foreach my $prods ( sort keys %{ $p_compreactions->{$reac}{$inmodel} } ) {
+				foreach my $compinrec ( sort keys %{ $p_compreactions->{$reac}{$inmodel}{$prods} } ) {
+					if ( $p_compounds->{$compinrec}{$inmodel}{compartment} ne "e" ) { $generic = 0; }
 				}
 			}
+			my $newid;
 			if   ( !$generic ) { $newid = "$reac\_$inmodel"; }
 			else               { $newid = "$reac"; }             #-- Si todos los componenetes son extracelulares, es una reaccion generica
 
-			foreach my $prods ( sort keys %{ $compreactions{$reac}{$inmodel} } ) {    #-- Analiza los componentes de la reaccion
-				foreach my $compinrec ( sort keys %{ $compreactions{$reac}{$inmodel}{$prods} } ) {
-					if ( !$compounds{$compinrec}{$inmodel}{compartment} ) { die "ERROR: Cannot find chemical species $compinrec in model $inmodel\n"; }
-					elsif ( $compounds{$compinrec}{$inmodel}{compartment} ne "e" ) {
+			foreach my $prods ( sort keys %{ $p_compreactions->{$reac}{$inmodel} } ) {    #-- Analiza los componentes de la reaccion
+				foreach my $compinrec ( sort keys %{ $p_compreactions->{$reac}{$inmodel}{$prods} } ) {
+					my $newidmet;
+					if ( !$p_compounds->{$compinrec}{$inmodel}{compartment} ) { die "ERROR: Cannot find chemical species $compinrec in model $inmodel\n"; }
+					elsif ( $p_compounds->{$compinrec}{$inmodel}{compartment} ne "e" ) {
 						$newidmet = "$compinrec\_$inmodel";
 						$generic  = 0;
 					}
 					else {
 						$newidmet = $compinrec;
 					}
-					$joincompreactions{$newid}{$prods}{$newidmet} = $compreactions{$reac}{$inmodel}{$prods}{$compinrec};
+					$p_joincompreactions->{$newid}{$prods}{$newidmet} = $p_compreactions->{$reac}{$inmodel}{$prods}{$compinrec};
 
-					#  print " *$newid $prods\t$newidmet ($inmodel) $compounds{$compinrec}{$inmodel}{compartment}\n";
+					#  print " *$newid $prods\t$newidmet ($inmodel) $p_compounds->{$compinrec}{$inmodel}{compartment}\n";
 				}
 			}
 
 			#-- MODIFICACION PDSANCHEZ 10/12/2012
 			#-- Identificar las reacciones de intercambio con el universo
 			$generic = 0;
-			foreach my $prods ( sort keys %{ $compreactions{$reac}{$inmodel} } ) {
-				foreach my $compinrec ( sort keys %{ $compreactions{$reac}{$inmodel}{$prods} } ) {
-					if ( $compounds{$compinrec}{$inmodel}{boundary} eq "true" ) { $generic = 1; }
+			foreach my $prods ( sort keys %{ $p_compreactions->{$reac}{$inmodel} } ) {
+				foreach my $compinrec ( sort keys %{ $p_compreactions->{$reac}{$inmodel}{$prods} } ) {
+					if (defined($p_compounds->{$compinrec}{$inmodel}{boundary}) && $p_compounds->{$compinrec}{$inmodel}{boundary} eq "true" ) { $generic = 1; }
 				}
 			}
 
 			#print " *$generic > $newid -- $newname\n";
 			#-- FIN MODIFICACION PDSANCHEZ 10/12/2012
 
+			my $newname;
+			my $lowerb;
+			my $upperb;
 			if ( !$generic ) {
 				$newid   = "$reac\_$inmodel";
-				$newname = "$reactions{$reac}{$inmodel}{reactionname}\_$inmodel";
-				$lowerb  = $reactions{$reac}{$inmodel}{lowerbound};
-				$upperb  = $reactions{$reac}{$inmodel}{upperbound};
+				$newname = $p_reactions->{$reac}{$inmodel}{reactionname} . '_' . $inmodel;
+				$lowerb  = $p_reactions->{$reac}{$inmodel}{lowerbound};
+				$upperb  = $p_reactions->{$reac}{$inmodel}{upperbound};
 			}
 			else {
 				$newid   = "$reac";
-				$newname = $reactions{$reac}{$inmodel}{reactionname};
+				$newname = $p_reactions->{$reac}{$inmodel}{reactionname};
 
 				#-- Sera una reaccion de intercambio, hay que mirar si esta en el medio minimo
 				if ( !$minmediasw ) {    #-- No hay que ajustar medios
-					$lowerb = $reactions{$reac}{$inmodel}{lowerbound};
-					$upperb = $reactions{$reac}{$inmodel}{upperbound};
+					$lowerb = $p_reactions->{$reac}{$inmodel}{lowerbound};
+					$upperb = $p_reactions->{$reac}{$inmodel}{upperbound};
 				}
 				else {                   #-- Hay que ajustar le medio minimo
-					if ( $minreac{$newid} ) {
-						$lowerb = $reactions{$reac}{$inmodel}{lowerbound};
-						$upperb = $reactions{$reac}{$inmodel}{upperbound};
+					if ( $p_minreac->{$newid} ) {
+						$lowerb = $p_reactions->{$reac}{$inmodel}{lowerbound};
+						$upperb = $p_reactions->{$reac}{$inmodel}{upperbound};
 
 						# A veces aparece el LB con valor cero. Poner -1000 para permitir entrada del compuesto
 						$lowerb = ($lowerb == 0) ? "-1000" : $lowerb;
@@ -365,7 +428,7 @@ sub reacs {
 						#-- Quitar UB=0 (no permite salida de compuestos, se acumulan y el crecimiento es nulo)
 						#$upperb=0;
 						#-- Se deja el valor de UB de los modelos
-						$upperb = $reactions{$reac}{$inmodel}{upperbound};
+						$upperb = $p_reactions->{$reac}{$inmodel}{upperbound};
 						#-- FIN MODIFICACION PDSANCHEZ 10/12/2012
 					}
 				}
@@ -374,254 +437,337 @@ sub reacs {
 			}
 
 			# print "$reac\t$inmodel -> $newid\n";
-			$joinreactions{$newid}{reactionname}  = $newname;
-			$joinreactions{$newid}{reversibility} = $reactions{$reac}{$inmodel}{reversibility};
-			$joinreactions{$newid}{lowerbound}    = $lowerb;
-			$joinreactions{$newid}{upperbound}    = $upperb;
+			$p_joinreactions->{$newid}{reactionname}  = $newname;
+			$p_joinreactions->{$newid}{reversibility} = $p_reactions->{$reac}{$inmodel}{reversibility};
+			$p_joinreactions->{$newid}{lowerbound}    = $lowerb;
+			$p_joinreactions->{$newid}{upperbound}    = $upperb;
 
-			#  $joinreactions{$newid}{upperbound}=$reactions{$reac}{$inmodel}{upperbound};
+			#  $p_joinreactions->{$newid}{upperbound}=$p_reactions->{$reac}{$inmodel}{upperbound};
 
 			if   ( !$newobjective ) {
-				$joinreactions{$newid}{objectcoef} = $reactions{$reac}{$inmodel}{objectcoef};
+				$p_joinreactions->{$newid}{objectcoef} = $p_reactions->{$reac}{$inmodel}{objectcoef};
 			}
 			else {
 				# Poner cero en todas las func objetivo
-				$joinreactions{$newid}{objectcoef} = 0;
+				$p_joinreactions->{$newid}{objectcoef} = 0;
 
 				#-- MODIFICACION PDSANCHEZ 19/12/2012
 				# Poner LB y UB a cero en las func objetivo
-				foreach my $rxid (keys %{$biomass{RX_ID}}) {
+				foreach my $rxid (keys %{$p_biomass->{RX_ID}}) {
 					if ($rxid eq $newid) {
-						$joinreactions{$rxid}{lowerbound} = 0;
-						$joinreactions{$rxid}{upperbound} = 0;
+						$p_joinreactions->{$rxid}{lowerbound} = 0;
+						$p_joinreactions->{$rxid}{upperbound} = 0;
 					}
 				}
 				#-- FIN MODIFICACION PDSANCHEZ 19/12/2012
 			}  #-- Vamos a aniadir una nueva funcion objetivo
 
-			$joinreactions{$newid}{fluxvalue} = $reactions{$reac}{$inmodel}{fluxvalue};
+			$p_joinreactions->{$newid}{fluxvalue} = $p_reactions->{$reac}{$inmodel}{fluxvalue};
 		}
 	}
 }
 
-sub objective {
-	my $numm = shift;
+sub objective($$\%\%\%\%\%) {
+	my($numm,$newobjective,$p_attTable,$p_biomass,$p_joincompounds,$p_joinreactions,$p_joincompreactions) = @_;
 	my $bcomp;
 
   #-- MODIFICACION PDSANCHEZ 19/12/2012
   # Cambiar "TotBiomass_e" por el identificador comun de la biomasa
 	#my $bcomp = "TotBiomass_e";  #-- Aniade reaccion de generacion de biomasa total
-	if (exists $biomass{UNIQUE_ID}) {
-		$bcomp = [keys %{$biomass{UNIQUE_ID}}]->[0];
+	if (exists $p_biomass->{UNIQUE_ID}) {
+		$bcomp = [keys %{$p_biomass->{UNIQUE_ID}}]->[0];
 	}
-	else {
-		$bcomp = [keys %{$biomass{NON_UNIQUE_ID}}]->[0];
+	elsif(exists $p_biomass->{NON_UNIQUE_ID}) {
+		$bcomp = [keys %{$p_biomass->{NON_UNIQUE_ID}}]->[0];
+	} else {
+		$bcomp = "TotBiomass_e";
 	}
 	$bcomp =~ s/_[a-z]$/_e/;  #-- Aniade reaccion de generacion de biomasa total
 	#-- FIN MODIFICACION PDSANCHEZ 19/12/2012
 
 	my $breac = "Generation_Biomass_total";
-	$joincompounds{$bcomp}{compartment}   = "e";
-	$joincompounds{$bcomp}{formula}       = "";
-	$joincompounds{$bcomp}{name}          = "Biomass_total";
-	$joincompounds{$bcomp}{charge}        = 0;
-	$joincompounds{$bcomp}{boundary}      = "false";
-	$joinreactions{$breac}{reactionname}  = $breac;
-	$joinreactions{$breac}{reversibility} = "false";
-	#$joinreactions{$breac}{lowerbound}    = 0;
-	#$joinreactions{$breac}{upperbound}    = 1000;
-	if   ($newobjective) {
-		$joinreactions{$breac}{objectcoef} = 1;
-		$joinreactions{$breac}{lowerbound} = 0;
-		$joinreactions{$breac}{upperbound} = 1000;
+	$p_joincompounds->{$bcomp}{compartment}   = "e";
+	$p_joincompounds->{$bcomp}{formula}       = "";
+	$p_joincompounds->{$bcomp}{name}          = "Biomass_total";
+	$p_joincompounds->{$bcomp}{charge}        = 0;
+	$p_joincompounds->{$bcomp}{boundary}      = "false";
+	$p_joinreactions->{$breac}{reactionname}  = $breac;
+	$p_joinreactions->{$breac}{reversibility} = "false";
+	#$p_joinreactions->{$breac}{lowerbound}    = 0;
+	#$p_joinreactions->{$breac}{upperbound}    = 1000;
+	if($newobjective) {
+		$p_joinreactions->{$breac}{objectcoef} = 1;
+		$p_joinreactions->{$breac}{lowerbound} = 0;
+		$p_joinreactions->{$breac}{upperbound} = 1000;
+	} else {
+		$p_joinreactions->{$breac}{objectcoef} = 0;
+		$p_joinreactions->{$breac}{lowerbound} = 0;
+		$p_joinreactions->{$breac}{upperbound} = 0;
 	}
-	else                 {
-		$joinreactions{$breac}{objectcoef} = 0;
-		$joinreactions{$breac}{lowerbound} = 0;
-		$joinreactions{$breac}{upperbound} = 0;
-	}
-	$joinreactions{$breac}{fluxvalue} = 0;
+	$p_joinreactions->{$breac}{fluxvalue} = 0;
 
 	#-- MODIFICACION PDSANCHEZ 19/12/2012
 	for ( my $nm = 1 ; $nm <= $numm ; $nm++ ) {
-		# $biom = "$biomass{$nm}\_$nm";
-		$biom = "$biomass{$nm}{react}\_$nm";
-		#$joincompreactions{$breac}{react}{$biom} = 1;
+		# $biom = "$p_biomass->{$nm}\_$nm";
+		my $biom = $p_biomass->{$nm}{react}.'_'.$nm;
+		#$p_joincompreactions->{$breac}{react}{$biom} = 1;
 
-		$joincompreactions{$breac}{react}{$biom} = $attTable{$nm}{COEF};
+		$p_joincompreactions->{$breac}{react}{$biom} = $p_attTable->{$nm}{COEF};
 	}
 	#-- MODIFICACION PDSANCHEZ 19/12/2012
 
-	$joincompreactions{$breac}{product}{$bcomp} = 1;
+	$p_joincompreactions->{$breac}{product}{$bcomp} = 1;
 
 
   #-- MODIFICACION PDSANCHEZ 19/12/2012
   # Cambiar "TotBiomass_b" por el identificador comun de la biomasa
 	#my $bcompb = "TotBiomass_b";    #-- Aniade reaccion de intercambio de biomasa total (necesaria para que haya flujo)
 	#my $bcompb;
-	#if (exists $biomass{UNIQUE_ID}) {
-	#	$bcompb = [keys %{$biomass{UNIQUE_ID}}]->[0];
+	#if (exists $p_biomass->{UNIQUE_ID}) {
+	#	$bcompb = [keys %{$p_biomass->{UNIQUE_ID}}]->[0];
 	#}
 	#else {
-	#	$bcompb = [keys %{$biomass{NON_UNIQUE_ID}}]->[0];
+	#	$bcompb = [keys %{$p_biomass->{NON_UNIQUE_ID}}]->[0];
 	#	$bcompb =~ s/_[a-z]$/_b/;  #-- Aniade reaccion de intercambio de biomasa total (necesaria para que haya flujo)
 	#}
   #
   # Esto no es necesario ya que duplicariamos el numero de reacciones
 	#my $breac  = "EX_TotBiomass";
-	#$joincompounds{$bcompb}{compartment}         = "e";
-	#$joincompounds{$bcompb}{formula}             = "";
-	#$joincompounds{$bcompb}{name}                = "Biomass_total";
-	#$joincompounds{$bcompb}{charge}              = 0;
-	#$joincompounds{$bcompb}{boundary}            = "true";
-	#$joinreactions{$breac}{reactionname}         = $breac;
-	#$joinreactions{$breac}{reversibility}        = "false";
-	#$joinreactions{$breac}{lowerbound}           = 0;
-	#$joinreactions{$breac}{upperbound}           = 1000;
-	#$joinreactions{$breac}{objectcoef}           = 0;
-	#$joinreactions{$breac}{fluxvalue}            = 0;
-	#$joincompreactions{$breac}{react}{$bcomp}    = 1;
-	#$joincompreactions{$breac}{product}{$bcompb} = 1;
+	#$p_joincompounds->{$bcompb}{compartment}         = "e";
+	#$p_joincompounds->{$bcompb}{formula}             = "";
+	#$p_joincompounds->{$bcompb}{name}                = "Biomass_total";
+	#$p_joincompounds->{$bcompb}{charge}              = 0;
+	#$p_joincompounds->{$bcompb}{boundary}            = "true";
+	#$p_joinreactions->{$breac}{reactionname}         = $breac;
+	#$p_joinreactions->{$breac}{reversibility}        = "false";
+	#$p_joinreactions->{$breac}{lowerbound}           = 0;
+	#$p_joinreactions->{$breac}{upperbound}           = 1000;
+	#$p_joinreactions->{$breac}{objectcoef}           = 0;
+	#$p_joinreactions->{$breac}{fluxvalue}            = 0;
+	#$p_joincompreactions->{$breac}{react}{$bcomp}    = 1;
+	#$p_joincompreactions->{$breac}{product}{$bcompb} = 1;
 	#-- FIN MODIFICACION PDSANCHEZ 19/12/2012
 
-#  print Dumper {%biomass};
-#	#print Dumper {%joinreactions};
-#	foreach my $id (keys %joinreactions) {
-#		my $name = $joinreactions{$id}{reactionname};
+#  print Dumper {%{$p_biomass}};
+#	#print Dumper {%{$p_joinreactions}};
+#	foreach my $id (keys %{$p_joinreactions}) {
+#		my $name = $p_joinreactions->{$id}{reactionname};
 #		if ($name =~ /biomass/i) {
 #			print "\n--> $id\n";
-#			print Dumper {%{$joinreactions{$id}}};
+#			print Dumper {%{$p_joinreactions->{$id}}};
 #		}
 #	}
 
 }
 
+use constant DEFAULT_UNITS => 'mmol_per_gDW_per_hr';
+use constant OUTPUT_SBML_NS => 'http://www.sbml.org/sbml/level2';
+use constant XHTML_NS => 'http://www.w3.org/1999/xhtml';
+use constant MATHML_NS => 'http://www.w3.org/1998/Math/MathML';
 
-sub writeModel {
-
+sub writeModel($\%\%\%\%\%\%) {
+	my($namemodel,$p_allcomparts,$p_outcompart,$p_joincompounds,$p_joinreactions,$p_joincompreactions,$p_ctoName) = @_;
+	
 	#Encabezados
-	print "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-	print "<sbml xmlns=\"http://www.sbml.org/sbml/level2\" level=\"2\" version=\"1\" xmlns:html=\"http://www.w3.org/1999/xhtml\">\n";
-	print "<model id=\"Combined\" name=\"$namemodel\">\n";
-
+	my $MW = XML::Writer->new(
+		NAMESPACES => 1,
+		#NEWLINES => 1,
+		ENCODING => 'utf-8',
+		PREFIX_MAP => {
+			OUTPUT_SBML_NS() => '',
+			XHTML_NS() => 'html',
+			MATHML_NS() => 'math'
+		}
+	);
+	$MW->xmlDecl('UTF-8');
+	$MW->startTag([OUTPUT_SBML_NS,'sbml'],'level' => '2','version' => '1');$MW->characters("\n");
+	$MW->startTag([OUTPUT_SBML_NS,'model'],'id' => 'Combined','name' => $namemodel);$MW->characters("\n");
+	
 	#Unidades de medida
 
-	print "<listOfUnitDefinitions>\n";
-	print "<unitDefinition id=\"mmol_per_gDW_per_hr\">\n";
-	print "<listOfUnits>\n";
-	print "<unit kind=\"mole\" scale=\"-3\"/>\n";
-	print "<unit kind=\"gram\" exponent=\"-1\"/>\n";
-	print "<unit kind=\"second\" multiplier=\".00027777\" exponent=\"-1\"/>\n";
-	print "</listOfUnits>\n";
-	print "</unitDefinition>\n";
-	print "</listOfUnitDefinitions>\n";
-
+	$MW->startTag([OUTPUT_SBML_NS,'listOfUnitDefinitions']);$MW->characters("\n");
+		$MW->startTag([OUTPUT_SBML_NS,'unitDefinition'],'id' => DEFAULT_UNITS);$MW->characters("\n");
+			$MW->startTag([OUTPUT_SBML_NS,'listOfUnits']);$MW->characters("\n");
+				$MW->emptyTag([OUTPUT_SBML_NS,'unit'],'kind' => 'mole','scale' => '-3');$MW->characters("\n");
+				$MW->emptyTag([OUTPUT_SBML_NS,'unit'],'kind' => 'gram','exponent' => '-1');$MW->characters("\n");
+				$MW->emptyTag([OUTPUT_SBML_NS,'unit'],'kind' => 'second','multiplier' => '.00027777','exponent' => '-1');$MW->characters("\n");
+			$MW->endTag();$MW->characters("\n");	# listOfUnits
+		$MW->endTag();$MW->characters("\n");	# unitDefinition
+	$MW->endTag();$MW->characters("\n");	# listOfUnitDefinitions
+	
 	#Primero formamos los compartimentos
-	print "<listOfCompartments>\n";
-	$compname = "";
-	foreach my $compl ( sort keys %allcomparts ) {
-		$outcmp = $outcompart{$compl};
-		@idl = split( /\_/, $compl );
-		if    ( $idl[0] eq "c" ) { $compname = "Cytosol"; }
-		elsif ( $idl[0] eq "p" ) { $compname = "Periplasm"; }
-		elsif ( $idl[0] eq "e" ) { $compname = "Extracellular"; }
-		if ( $idl[1] ) { $compname .= "\_$idl[1]"; }
-		print "<compartment id=\"$compl\" name=\"$compname\"";
-		if ($outcmp) { print " outside=\"$outcmp\""; }
-		print "/>\n";
+	$MW->startTag([OUTPUT_SBML_NS,'listOfCompartments']);$MW->characters("\n");
+	foreach my $compl ( sort keys %{$p_allcomparts} ) {
+		my $outcmp = $p_outcompart->{$compl};
+		my @idl = split( /\_/, $compl );
+		my $compname;
+		$compname = $p_ctoName->{$idl[1]}{$compl}  if(scalar(@idl)>1);
+		unless(defined($compname)) {
+			if    ( $idl[0] eq "c" ) { $compname = "Cytosol"; }
+			elsif ( $idl[0] eq "p" ) { $compname = "Periplasm"; }
+			elsif ( $idl[0] eq "e" ) { $compname = "Extracellular"; }
+			else { $compname = "Unknown"; }
+		}
+		if ( defined($idl[1]) ) { $compname .= "\_$idl[1]"; }
+		
+		my @attrs = (
+			'id'	=> $compl,
+			'name'	=> $compname
+		);
+		if ($outcmp) { push(@attrs,'outside' => $outcmp); }
+		$MW->emptyTag([OUTPUT_SBML_NS,'compartment'],@attrs);$MW->characters("\n");
 	}
-	print "</listOfCompartments>\n";
+	$MW->endTag();$MW->characters("\n");	# listOfCompartments
 
 	#Lista de especies
 
-	print "<listOfSpecies>\n";
-	foreach my $tcomp ( sort keys %joincompounds ) {
-		print "<species id=\"$tcomp\" name=\"$joincompounds{$tcomp}{name}\" compartment=\"$joincompounds{$tcomp}{compartment}\" charge=\"$joincompounds{$tcomp}{charge}\" boundaryCondition=\"$joincompounds{$tcomp}{boundary}\"";
-		print "/>\n";
+	$MW->startTag([OUTPUT_SBML_NS,'listOfSpecies']);$MW->characters("\n");
+	foreach my $tcomp ( sort keys %{$p_joincompounds} ) {
+		my @attrs = (
+			'id'	=> $tcomp,
+			'compartment'	=> $p_joincompounds->{$tcomp}{compartment},
+		);
+		push(@attrs,'name' => $p_joincompounds->{$tcomp}{name})  if(defined($p_joincompounds->{$tcomp}{name}));
+		push(@attrs,'boundaryCondition' => $p_joincompounds->{$tcomp}{boundary})  if(defined($p_joincompounds->{$tcomp}{boundary}));
+		push(@attrs,'charge' => $p_joincompounds->{$tcomp}{charge})  if(defined($p_joincompounds->{$tcomp}{charge}));
+		$MW->emptyTag([OUTPUT_SBML_NS,'species'],@attrs);$MW->characters("\n");
 	}
-	print "</listOfSpecies>\n";
+	$MW->endTag();$MW->characters("\n");	# listOfSpecies
 
 	#Reacciones
-	print "<listOfReactions>\n";
-	foreach my $react ( sort keys %joinreactions ) {
-		print "<reaction id=\"$react\" name=\"$joinreactions{$react}{reactionname}\" reversible=\"$joinreactions{$react}{reversibility}\">\n";
-		if ( $joincompreactions{$react}{react} ) {
-			print "<listOfReactants>\n";
-			foreach my $reactant ( sort keys %{ $joincompreactions{$react}{react} } ) {
-				print "<speciesReference species=\"$reactant\"  stoichiometry=\"$joincompreactions{$react}{react}{$reactant}\"/>\n";
+	$MW->startTag([OUTPUT_SBML_NS,'listOfReactions']);$MW->characters("\n");
+	foreach my $react ( sort keys %{$p_joinreactions} ) {
+		my @reactAttrs = (
+			'id'	=> $react,
+			'name'	=> $p_joinreactions->{$react}{reactionname},
+		);
+		push(@reactAttrs,'reversible' => $p_joinreactions->{$react}{reversibility})  if(defined($p_joinreactions->{$react}{reversibility}));
+		
+		my $plb = $p_joinreactions->{$react}{lowerbound};
+		my $pub = $p_joinreactions->{$react}{upperbound};
+		my $objCoef = $p_joinreactions->{$react}{objectcoef};
+		my $fluxValue = $p_joinreactions->{$react}{fluxvalue};
+		
+		if($p_joincompreactions->{$react}{react} || $p_joincompreactions->{$react}{product} || defined($plb) || defined($pub) || defined($objCoef) || defined($fluxValue)) {
+			$MW->startTag([OUTPUT_SBML_NS,'reaction'],@reactAttrs);$MW->characters("\n");
+			if ( $p_joincompreactions->{$react}{react} ) {
+				
+				$MW->startTag([OUTPUT_SBML_NS,'listOfReactants']);$MW->characters("\n");
+				foreach my $reactant ( sort keys %{ $p_joincompreactions->{$react}{react} } ) {
+					my @spReference = (
+						'species'	=> $reactant,
+					);
+					push(@spReference,'stoichiometry' => $p_joincompreactions->{$react}{react}{$reactant})  if(defined($p_joincompreactions->{$react}{react}{$reactant}));
+					$MW->emptyTag([OUTPUT_SBML_NS,'speciesReference'],@spReference);$MW->characters("\n");
+				}
+				$MW->endTag();$MW->characters("\n");	# listOfReactants
 			}
-			print "</listOfReactants>\n";
-		}
-		if ( $joincompreactions{$react}{product} ) {
-			print "<listOfProducts>\n";
-			foreach my $product ( sort keys %{ $joincompreactions{$react}{product} } ) {
-				print "<speciesReference species=\"$product\"  stoichiometry=\"$joincompreactions{$react}{product}{$product}\"/>\n";
+			if ( $p_joincompreactions->{$react}{product} ) {
+				$MW->startTag([OUTPUT_SBML_NS,'listOfProducts']);$MW->characters("\n");
+				foreach my $product ( sort keys %{ $p_joincompreactions->{$react}{product} } ) {
+					my @spReference = (
+						'species'	=> $product,
+					);
+					push(@spReference,'stoichiometry' => $p_joincompreactions->{$react}{product}{$product})  if(defined($p_joincompreactions->{$react}{product}{$product}));
+					$MW->emptyTag([OUTPUT_SBML_NS,'speciesReference'],@spReference);$MW->characters("\n");
+				}
+				$MW->endTag();$MW->characters("\n");	# listOfProducts
 			}
-			print "</listOfProducts>\n";
+			
+			# We generate a kinetic law only when there is something interesting to show there
+			if(defined($plb) || defined($pub) || defined($objCoef) || defined($fluxValue)) {
+				$MW->startTag([OUTPUT_SBML_NS,'kineticLaw']);$MW->characters("\n");
+					### $plb = ($plb < -100) ? -100 : $plb; #-- para poner a -100 valores inferiores (ej -1000)
+					### $pub = ($pub > 100) ? 100 : $pub; #-- para poner a 100 valores superiores (ej 1000)
+					if(defined($plb)) {
+						$plb = ($plb < 0 && $plb > -100) ? -1000 : $plb; #-- para incremetar el flujo cuando es muy bajito
+					}
+					if(defined($pub)) {
+						$pub = ($pub > 0 && $pub < 100) ? 1000 : $pub; #-- para incremetar el flujo cuando es muy bajito
+					}
+					$MW->startTag([MATHML_NS,'math']);$MW->characters("\n");
+						$MW->startTag([MATHML_NS,'apply']);$MW->characters("\n");
+						if(defined($plb)) {
+							$MW->dataElement([MATHML_NS,'ci'],' LOWER_BOUND ');$MW->characters("\n");
+						}
+						if(defined($pub)) {
+							$MW->dataElement([MATHML_NS,'ci'],' UPPER_BOUND ');$MW->characters("\n");
+						}
+						if(defined($objCoef)) {
+							$MW->dataElement([MATHML_NS,'ci'],' OBJECTIVE_COEFFICIENT ');$MW->characters("\n");
+						}
+						if(defined($fluxValue)) {
+							$MW->dataElement([MATHML_NS,'ci'],' FLUX_VALUE ');$MW->characters("\n");
+						}
+						$MW->endTag();$MW->characters("\n");	# apply
+					$MW->endTag();$MW->characters("\n");	# math
+					$MW->startTag([OUTPUT_SBML_NS,'listOfParameters']);$MW->characters("\n");
+					
+					if(defined($plb)) {
+						$MW->emptyTag([OUTPUT_SBML_NS,'parameter'],'id' => 'LOWER_BOUND','value' => $plb,'units' => DEFAULT_UNITS);$MW->characters("\n");
+						#$MW->emptyTag([OUTPUT_SBML_NS,'parameter'],'id' => 'LOWER_BOUND','value' => $p_joinreactions->{$react}{lowerbound},'units' => DEFAULT_UNITS);
+					}
+					if(defined($pub)) {
+						$MW->emptyTag([OUTPUT_SBML_NS,'parameter'],'id' => 'UPPER_BOUND','value' => $pub,'units' => DEFAULT_UNITS);$MW->characters("\n");
+						#$MW->emptyTag([OUTPUT_SBML_NS,'parameter'],'id' => 'UPPER_BOUND','value' => $p_joinreactions->{$react}{upperbound},'units' => DEFAULT_UNITS);
+					}
+						
+					if(defined($objCoef)) {
+						$MW->emptyTag([OUTPUT_SBML_NS,'parameter'],'id' => 'OBJECTIVE_COEFFICIENT','value' => $objCoef);$MW->characters("\n");
+					}
+					if(defined($fluxValue)) {
+						$MW->emptyTag([OUTPUT_SBML_NS,'parameter'],'id' => 'FLUX_VALUE','value' => $fluxValue,'units' => DEFAULT_UNITS);$MW->characters("\n");
+					}
+					$MW->endTag();$MW->characters("\n");	# listOfParameters
+				$MW->endTag();$MW->characters("\n");	# kineticLaw
+			}
+			$MW->endTag();$MW->characters("\n");	# reaction
+		} else {
+			$MW->emptyTag([OUTPUT_SBML_NS,'reaction'],@reactAttrs);$MW->characters("\n");
 		}
-		print "<kineticLaw>\n";
-		print "      <math xmlns=\"http://www.w3.org/1998/Math/MathML\">\n";
-		print "          <apply>\n";
-		print "          <ci> LOWER_BOUND </ci>\n";
-		print "          <ci> UPPER_BOUND </ci>\n";
-		print "          <ci> OBJECTIVE_COEFFICIENT </ci>\n";
-		print "          <ci> FLUX_VALUE </ci>\n";
-		print "          </apply>\n";
-		print "      </math>\n";
-		print "      <listOfParameters>\n";
-
-		my $plb = $joinreactions{$react}{lowerbound};
-		my $pub = $joinreactions{$react}{upperbound};
-		### $plb = ($plb < -100) ? -100 : $plb; #-- para poner a -100 valores inferiores (ej -1000)
-		### $pub = ($pub > 100) ? 100 : $pub; #-- para poner a 100 valores superiores (ej 1000)
-		$plb = ($plb < 0 && $plb > -100) ? -1000 : $plb; #-- para incremetar el flujo cuando es muy bajito
-		$pub = ($pub > 0 && $pub < 100) ? 1000 : $pub; #-- para incremetar el flujo cuando es muy bajito
-		print "         <parameter id=\"LOWER_BOUND\" value=\"$plb\" units=\"mmol_per_gDW_per_hr\"/>\n";
-		print "         <parameter id=\"UPPER_BOUND\" value=\"$pub\" units=\"mmol_per_gDW_per_hr\"/>\n";
-
-		#print "         <parameter id=\"LOWER_BOUND\" value=\"$joinreactions{$react}{lowerbound}\" units=\"mmol_per_gDW_per_hr\"/>\n";
-		#print "         <parameter id=\"UPPER_BOUND\" value=\"$joinreactions{$react}{upperbound}\" units=\"mmol_per_gDW_per_hr\"/>\n";
-
-		print "         <parameter id=\"OBJECTIVE_COEFFICIENT\" value=\"$joinreactions{$react}{objectcoef}\"/>\n";
-		print "         <parameter id=\"FLUX_VALUE\" value=\"$joinreactions{$react}{fluxvalue}\" units=\"mmol_per_gDW_per_hr\"/>\n";
-		print "      </listOfParameters>\n";
-		print "</kineticLaw>\n";
-		print "</reaction>\n";
 	}
-	print "</listOfReactions>\n";
-	print "</model>\n";
-	print "</sbml>\n";
-
+	$MW->endTag();$MW->characters("\n");	# listOfReactions
+	
+	
+	$MW->endTag();$MW->characters("\n");	# model
+	$MW->endTag();	# sbml
+	$MW->end();
 }
 
-sub minmedia {
-	my $minmedia = shift;
-	my $numm     = shift;
+sub minmedia($$\%) {
+	my($minmedia,$numm,$p_minreac) = @_;
+	
+	my $minmediaOrig = $minmedia;
 	$minmedia =~ s/xml/minmedia_ul/;
-	open( IN, $minmedia ) || die "Cannot read minimum media from $minmedia\n";
-	while (<IN>) {
-		chomp;
-		( $ex, $namer ) = split( /\t/, $_ );
-		$ex =~ s/\(e\)/\_e/g;
-		$minreac{$ex}{$numm} = $namer;
+	if(open(my $IN, '<', $minmedia)) {
+		while (my $line = <$IN>) {
+			chomp($line);
+			my( $ex, $namer ) = split( /\t/, $line );
+			$ex =~ s/\(e\)/\_e/g;
+			$p_minreac->{$ex}{$numm} = $namer;
+		}
+		close($IN);
+	} else {
+		die "Cannot read minimum media $minmedia from $minmediaOrig\n";
 	}
-	close IN;
 }
 
-sub rxnDuplicadas {
+sub rxnDuplicadas(\%\%\%) {
+	my($p_compounds,$p_compreactions,$p_minreac) = @_;
+	
 	my %table = ();
-	foreach my $id (keys %compreactions) {
+	foreach my $id (keys %{$p_compreactions}) {
 		my $isbd = 0;
-		foreach my $md (keys %{$compreactions{$id}}) {
+		foreach my $md (keys %{$p_compreactions->{$id}}) {
 			my @lst = ();
-			foreach my $rc (sort keys %{$compreactions{$id}{$md}{react}}) {
-				if ($compounds{$rc}{$md}{boundary} eq "true") {
+			foreach my $rc (sort keys %{$p_compreactions->{$id}{$md}{react}}) {
+				if (defined($p_compounds->{$rc}{$md}{boundary}) && $p_compounds->{$rc}{$md}{boundary} eq "true") {
 					$isbd = 1;
 				}
 				push(@lst, $rc);
 			}
-			foreach my $pd (sort keys %{$compreactions{$id}{$md}{product}}) {
-				if ($compounds{$pd}{$md}{boundary} eq "true") {
+			foreach my $pd (sort keys %{$p_compreactions->{$id}{$md}{product}}) {
+				if (defined($p_compounds->{$pd}{$md}{boundary}) && $p_compounds->{$pd}{$md}{boundary} eq "true") {
 					$isbd = 1;
 				}
 				push(@lst, $pd);
@@ -641,7 +787,7 @@ sub rxnDuplicadas {
 			my @eliminar = ();
 			foreach my $id (@a) {
 				# Si aparece en mmin se respeta
-				if (exists $minreac{$id}) {
+				if (exists $p_minreac->{$id}) {
 					$inmm++;
 				}
 				else {
