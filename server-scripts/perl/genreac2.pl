@@ -10,6 +10,7 @@ use Data::Dumper;
 
 use XML::LibXML::Reader;
 use XML::Writer;
+#use Carp qw();
 
 ########################
 # Function definitions #
@@ -93,84 +94,6 @@ sub extractReactions($$\%\%\%\%\%\%\%\%) {
 			my %objectivereact = ();
 			
 			my $numUnknown = 0;
-
-			my $finishedReaction = sub() {
-				if (defined($reactionId) && $objectivereact{$model}{$reactionId} ) {    #-- Vamos a buscar si hay termino de biomasa
-					foreach my $prods ( keys %{ $p_compreactions->{$reactionId}{$model}{product} } ) {
-						my $comname = $p_compounds->{$prods}{$model}{name};
-
-						#-- MODIFICACION PDSANCHEZ 18/12/2012
-						# Guardar id en lugar del nombre
-						#if ( $comname =~ /biomass/i ) { $p_biomass->{$model} = $comname; }
-						if ( $comname =~ /biomass/i ) {
-							$p_biomass->{$model}{product} = $prods;
-
-							my $prd = $prods;
-							$prd =~ s/_[a-z]$/_b/;
-							if (exists $p_compounds->{$prd}) {
-								$p_biomass->{UNIQUE_ID}{$prd}++;
-							}
-							else {
-								$p_biomass->{NON_UNIQUE_ID}{$prods}++;
-							}
-							$p_biomass->{RX_ID}{$reactionId."_".$model}++;
-						}
-						#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
-
-					}
-					#-- MODIFICACION PDSANCHEZ 18/12/2012
-					# Incluir reactantes
-					foreach my $react ( keys %{ $p_compreactions->{$reactionId}{$model}{react} } ) {
-						my $comname = $p_compounds->{$react}{$model}{name};
-
-						#-- MODIFICACION PDSANCHEZ 18/12/2012
-						# Guardar id en lugar del nombre
-						#if ( $comname =~ /biomass/i ) { $p_biomass->{$model} = $comname; }
-						if ( $comname =~ /biomass/i ) {
-							$p_biomass->{$model}{react} = $react;
-
-							my $prd = $react;
-							$prd =~ s/_[a-z]$/_b/;
-							if (exists $p_compounds->{$prd}) {
-								$p_biomass->{UNIQUE_ID}{$prd}++;
-							}
-							else {
-								$p_biomass->{NON_UNIQUE_ID}{$react}++;
-							}
-							$p_biomass->{RX_ID}{$reactionId."_".$model}++;
-						}
-						#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
-
-					}
-
-					#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
-
-					if (!exists($p_biomass->{$model})) {                     #-- Si no lo hay, se aniade
-					  #-- MODIFICACION PDSANCHEZ 18/12/2012
-					  # Crear el mismo id para todos los modelos
-						#my $bterm                                               = "biomass$model\_c";
-						#$p_biomass->{$model}                                     = $bterm;
-						#$p_compreactions->{$reactionId}{$model}{product}{$bterm} = 1;
-						#$p_compounds->{$bterm}{$model}{compartment}              = "c";
-						#$p_compounds->{$bterm}{$model}{name}                     = $bterm;
-						#$p_compounds->{$bterm}{$model}{charge}                   = 0;
-						#$p_compounds->{$bterm}{$model}{boundary}                 = "false";
-
-						my $bterm                                               = "biomass_c";
-						$p_biomass->{$model}                                     = $bterm;
-						$p_compreactions->{$reactionId}{$model}{product}{$bterm} = 1;
-						$p_compounds->{$bterm}{$model}{compartment}              = "c";
-						$p_compounds->{$bterm}{$model}{name}                     = "biomass$model\_c";
-						$p_compounds->{$bterm}{$model}{charge}                   = 0;
-						$p_compounds->{$bterm}{$model}{boundary}                 = "false";
-						$p_biomass->{NON_UNIQUE_ID}{$bterm}++;
-						#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
-					}
-				}
-				$reactionId     = undef;
-				$reactionName   = "";
-				$reactorproduct = "";
-			};
 			
 			# Recuperar atributos del modelo (o valores por defecto si no existen)
 			my $ph = $MR->getAttribute('ph');
@@ -244,48 +167,130 @@ sub extractReactions($$\%\%\%\%\%\%\%\%) {
 					}
 					#-- FIN MODIFICACION PDSANCHEZ 20/12/2012
 				} elsif($localName eq 'species') {
-					my $coid    = $MR->getAttribute('id');
-					my $coname  = $MR->getAttribute('name');
-					my $compart = $MR->getAttribute('compartment');
-					my $tcharge = $MR->getAttribute('charge');
-					my $tboun   = $MR->getAttribute('boundaryCondition');
+					# Do it only once!
+					if($MR->nodeType() == XML::LibXML::Reader::XML_READER_TYPE_ELEMENT) {
+						my $coid    = $MR->getAttribute('id');
+						my $coname  = $MR->getAttribute('name');
+						my $compart = $MR->getAttribute('compartment');
+						my $tcharge = $MR->getAttribute('charge');
+						my $tboun   = $MR->getAttribute('boundaryCondition');
 
-					# if($model>0) { print "$_\n"; }
-					#Sacamos formula quimica del nombre
-					my $compoundFormula = "";
-					if(defined($coname)) {
-						my @cp_parts = split( /\_/, $coname );
-						foreach my $cp_part (@cp_parts) {
-							$compoundFormula = $cp_part;
+						# if($model>0) { print "$_\n"; }
+						#Sacamos formula quimica del nombre
+						my $compoundFormula = "";
+						if(defined($coname)) {
+							my @cp_parts = split( /\_/, $coname );
+							foreach my $cp_part (@cp_parts) {
+								$compoundFormula = $cp_part;
+							}
 						}
+
+						#-- MODIFICACION PDSANCHEZ 20/12/2012
+			#			#  my($ffw,$ssw)=split(/\_/,$compart);
+			#			#  if($ssw) { $iwd=$ssw; } else { $iwd=$ffw; }
+			#			$iwd = $compart;
+			#			$iwd =~ s/\_//g;
+			#
+			#			$abcompart = substr( $iwd, 0, 1 );
+			#			$abcompart =~ tr/A-Z/a-z/;
+
+						my $abcompart = $p_ctoTable->{$model}{$compart}{ABB};
+						#-- FIN MODIFICACION PDSANCHEZ 20/12/2012
+
+						# my $crea =$dbh->do("INSERT INTO compounds values(\"$1\",\"$compoundFormula\",\"$3\",\"$model\",\"$2\",\"$4\",\"$5\");");
+						$p_compounds->{$coid}{$model}{formula}     = $compoundFormula;
+						$p_compounds->{$coid}{$model}{compartment} = $abcompart;
+						$p_compounds->{$coid}{$model}{name}        = $coname;
+						$p_compounds->{$coid}{$model}{charge}      = $tcharge;
+						$p_compounds->{$coid}{$model}{boundary}    = $tboun;
+						# print "*$coid*$model*$coname*$p_compounds->{$1}{$model}{compartment}*\n";
 					}
-
-					#-- MODIFICACION PDSANCHEZ 20/12/2012
-		#			#  my($ffw,$ssw)=split(/\_/,$compart);
-		#			#  if($ssw) { $iwd=$ssw; } else { $iwd=$ffw; }
-		#			$iwd = $compart;
-		#			$iwd =~ s/\_//g;
-		#
-		#			$abcompart = substr( $iwd, 0, 1 );
-		#			$abcompart =~ tr/A-Z/a-z/;
-
-					my $abcompart = $p_ctoTable->{$model}{$compart}{ABB};
-					#-- FIN MODIFICACION PDSANCHEZ 20/12/2012
-
-					# my $crea =$dbh->do("INSERT INTO compounds values(\"$1\",\"$compoundFormula\",\"$3\",\"$model\",\"$2\",\"$4\",\"$5\");");
-					$p_compounds->{$coid}{$model}{formula}     = $compoundFormula;
-					$p_compounds->{$coid}{$model}{compartment} = $abcompart;
-					$p_compounds->{$coid}{$model}{name}        = $coname;
-					$p_compounds->{$coid}{$model}{charge}      = $tcharge;
-					$p_compounds->{$coid}{$model}{boundary}    = $tboun;
-					# print "*$coid*$model*$coname*$p_compounds->{$1}{$model}{compartment}*\n";
 				} elsif($localName eq 'reaction') {
-					$finishedReaction->();
-					
-					$reactionId                                    = $MR->getAttribute('id');
-					$reactionName                                  = $MR->getAttribute('name');
-					$p_reactions->{$reactionId}{$model}{reactionname}  = $reactionName;
-					$p_reactions->{$reactionId}{$model}{reversibility} = $MR->getAttribute('reversible');
+					# Do it only once!
+					if($MR->nodeType() == XML::LibXML::Reader::XML_READER_TYPE_ELEMENT) {
+						$reactionId                                    = $MR->getAttribute('id');
+						$reactionName                                  = $MR->getAttribute('name');
+						$p_reactions->{$reactionId}{$model}{reactionname}  = $reactionName;
+						$p_reactions->{$reactionId}{$model}{reversibility} = $MR->getAttribute('reversible');
+					} elsif($MR->nodeType() == XML::LibXML::Reader::XML_READER_TYPE_END_ELEMENT) {
+						if(exists($objectivereact{$reactionId})) {
+							#Carp::cluck("RA $reactionId")  if(defined($reactionId));
+							foreach my $prods ( keys %{ $p_compreactions->{$reactionId}{$model}{product} } ) {
+								my $comname = $p_compounds->{$prods}{$model}{name};
+
+								#-- MODIFICACION PDSANCHEZ 18/12/2012
+								# Guardar id en lugar del nombre
+								#if ( $comname =~ /biomass/i ) { $p_biomass->{$model} = $comname; }
+								if ( $comname =~ /biomass/i ) {
+									$p_biomass->{$model}{product} = $prods;
+
+									my $prd = $prods;
+									$prd =~ s/_[a-z]$/_b/;
+									if (exists $p_compounds->{$prd}) {
+										$p_biomass->{UNIQUE_ID}{$prd}++;
+									}
+									else {
+										$p_biomass->{NON_UNIQUE_ID}{$prods}++;
+									}
+									$p_biomass->{RX_ID}{$reactionId."_".$model}++;
+								}
+								#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
+
+							}
+							#-- MODIFICACION PDSANCHEZ 18/12/2012
+							# Incluir reactantes
+							foreach my $react ( keys %{ $p_compreactions->{$reactionId}{$model}{react} } ) {
+								my $comname = $p_compounds->{$react}{$model}{name};
+
+								#-- MODIFICACION PDSANCHEZ 18/12/2012
+								# Guardar id en lugar del nombre
+								#if ( $comname =~ /biomass/i ) { $p_biomass->{$model} = $comname; }
+								if ( $comname =~ /biomass/i ) {
+									$p_biomass->{$model}{react} = $react;
+
+									my $prd = $react;
+									$prd =~ s/_[a-z]$/_b/;
+									if (exists $p_compounds->{$prd}) {
+										$p_biomass->{UNIQUE_ID}{$prd}++;
+									}
+									else {
+										$p_biomass->{NON_UNIQUE_ID}{$react}++;
+									}
+									$p_biomass->{RX_ID}{$reactionId."_".$model}++;
+								}
+								#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
+
+							}
+
+							#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
+
+							if (!exists($p_biomass->{$model})) {                     #-- Si no lo hay, se aniade
+							  #-- MODIFICACION PDSANCHEZ 18/12/2012
+							  # Crear el mismo id para todos los modelos
+								#my $bterm                                               = "biomass$model\_c";
+								#$p_biomass->{$model}                                     = $bterm;
+								#$p_compreactions->{$reactionId}{$model}{product}{$bterm} = 1;
+								#$p_compounds->{$bterm}{$model}{compartment}              = "c";
+								#$p_compounds->{$bterm}{$model}{name}                     = $bterm;
+								#$p_compounds->{$bterm}{$model}{charge}                   = 0;
+								#$p_compounds->{$bterm}{$model}{boundary}                 = "false";
+
+								my $bterm                                               = "biomass_c";
+								$p_biomass->{$model}                                     = $bterm;
+								$p_compreactions->{$reactionId}{$model}{product}{$bterm} = 1;
+								$p_compounds->{$bterm}{$model}{compartment}              = "c";
+								$p_compounds->{$bterm}{$model}{name}                     = "biomass$model\_c";
+								$p_compounds->{$bterm}{$model}{charge}                   = 0;
+								$p_compounds->{$bterm}{$model}{boundary}                 = "false";
+								$p_biomass->{NON_UNIQUE_ID}{$bterm}++;
+								#-- FIN MODIFICACION PDSANCHEZ 18/12/2012
+							}
+						}
+						
+						$reactionId     = undef;
+						$reactionName   = "";
+						$reactorproduct = "";
+					}
 				} elsif($localName eq 'listOfReactants' || $localName eq 'listOfProducts') {
 					my $reactorproduct = $localName eq 'listOfReactants' ? 'react' : 'product';
 					if($MR->nextPatternMatch($patsr)) {
@@ -302,7 +307,9 @@ sub extractReactions($$\%\%\%\%\%\%\%\%) {
 							elsif ( $parameter_id =~ /UPPER_BOUND/ ) { $p_reactions->{$reactionId}{$model}{upperbound} = $parameter_value; }
 							elsif ( $parameter_id =~ /OBJECTIVE_COEFFICIENT/ ) {
 								$p_reactions->{$reactionId}{$model}{objectcoef} = $parameter_value;
-								if ( $parameter_value > 0 ) { $objectivereact{$model}{$reactionId} = $parameter_value; }
+								if ( $parameter_value > 0 ) {
+									$objectivereact{$reactionId} = $parameter_value;
+								}
 							}
 							elsif ( $parameter_id =~ /FLUX_VALUE/ ) {
 								$p_reactions->{$reactionId}{$model}{fluxvalue} = $parameter_value;
@@ -311,8 +318,6 @@ sub extractReactions($$\%\%\%\%\%\%\%\%) {
 					}
 				}
 			}
-			
-			$finishedReaction->();
 			#print Dumper {%{$p_biomass}};
 		}
 		$MR->finish();
