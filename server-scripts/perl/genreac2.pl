@@ -174,7 +174,7 @@ sub extractReactions($$\%\%\%\%\%\%\%\%) {
 			
 			# Recuperar atributos del modelo (o valores por defecto si no existen)
 			my $ph = $MR->getAttribute('ph');
-			$ph = "7.2"  unless(defined('ph'));
+			$ph = "7.2"  unless(defined($ph));
 			my $coef = $MR->getAttribute('coef');
 			$coef = "1"  unless(defined($coef));
 
