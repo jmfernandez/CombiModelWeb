@@ -156,11 +156,11 @@ public class DefaultMinMedia {
 	KineticLaw kl = r.isSetKineticLaw() ? r.getKineticLaw() : r.createKineticLaw();
 	if(kl!=null) {
 		if (!mmedia) {
-		  kl.getLocalParameter("LOWER_BOUND").setValue(0.0);
+		  kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).setValue(0.0);
 		}
 		// Activo cuando tiene que estar activo pero no lo esta
-		else if (kl.getLocalParameter("LOWER_BOUND").getValue() == 0) {
-		  kl.getLocalParameter("LOWER_BOUND").setValue(-1000);
+		else if (kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).getValue() == 0) {
+		  kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).setValue(-1000);
 		}
 	}
       }
