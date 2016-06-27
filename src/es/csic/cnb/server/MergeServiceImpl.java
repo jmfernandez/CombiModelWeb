@@ -42,6 +42,7 @@ import com.google.gwt.user.server.rpc.RemoteServiceServlet;
 
 import es.csic.cnb.ModelManager;
 import es.csic.cnb.util.PropertiesParser;
+import es.csic.cnb.util.Util;
 import es.csic.cnb.client.rpc.MergeService;
 import es.csic.cnb.shared.ClientData;
 import es.csic.cnb.shared.JobStatus;
@@ -331,7 +332,7 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
               if (!mmIdList.contains(r.getId())) {
 		KineticLaw kl = r.isSetKineticLaw() ? r.getKineticLaw() : r.createKineticLaw();
 		if(kl != null) {
-			kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).setValue(0.0);
+			kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).setValue(Util.DEFAULT_LOWER_BOUND_VALUE);
 		}
               }
             }

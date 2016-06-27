@@ -21,6 +21,8 @@ import org.sbml.jsbml.SBMLWriter;
 import org.sbml.jsbml.Species;
 import org.sbml.jsbml.SpeciesReference;
 
+import es.csic.cnb.util.Util;
+
 public class DefaultMinMedia {
   private static final String NEWLINE = System.getProperty("line.separator");
   private static final String TAB = "\t";
@@ -156,10 +158,10 @@ public class DefaultMinMedia {
 	KineticLaw kl = r.isSetKineticLaw() ? r.getKineticLaw() : r.createKineticLaw();
 	if(kl!=null) {
 		if (!mmedia) {
-		  kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).setValue(0.0);
+		  kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).setValue(Util.DEFAULT_LOWER_BOUND_VALUE);
 		}
 		// Activo cuando tiene que estar activo pero no lo esta
-		else if (kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).getValue() == 0) {
+		else if (kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).getValue() == Util.DEFAULT_LOWER_BOUND_VALUE) {
 		  kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).setValue(-1000);
 		}
 	}
