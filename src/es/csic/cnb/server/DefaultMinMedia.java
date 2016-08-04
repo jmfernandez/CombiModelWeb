@@ -12,6 +12,8 @@ import java.util.regex.Pattern;
 import javax.xml.stream.XMLStreamException;
 
 import org.apache.commons.io.FileUtils;
+
+import org.sbml.jsbml.ext.fbc.FBCConstants;
 import org.sbml.jsbml.KineticLaw;
 import org.sbml.jsbml.ListOf;
 import org.sbml.jsbml.Reaction;
@@ -130,6 +132,8 @@ public class DefaultMinMedia {
   }
 
   public void adjustMinMedia() {
+    boolean isFBC = cdoc.isPackageEnabled(FBCConstants.shortLabel);
+    
     // Recorrer las reacciones
     ListOf<Reaction> rxlist = cdoc.getModel().getListOfReactions();
     for (Reaction r : rxlist) {
@@ -155,16 +159,12 @@ public class DefaultMinMedia {
         }
 
       if (exchange) {
-	KineticLaw kl = r.isSetKineticLaw() ? r.getKineticLaw() : r.createKineticLaw();
-	if(kl!=null) {
 		if (!mmedia) {
-		  kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).setValue(Util.DEFAULT_LOWER_BOUND_VALUE);
-		}
+			Util.setDefaultLowerBoundValue(r,isFBC);
+		} else if(Util.getLowerBoundValue(r,isFBC) == Util.DEFAULT_LOWER_BOUND_VALUE) {
 		// Activo cuando tiene que estar activo pero no lo esta
-		else if (kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).getValue() == Util.DEFAULT_LOWER_BOUND_VALUE) {
-		  kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).setValue(-1000);
+			Util.setImpossibleLowerBoundValue(r,isFBC);
 		}
-	}
       }
     }
 

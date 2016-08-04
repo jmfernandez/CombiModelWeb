@@ -27,6 +27,8 @@ import javax.xml.stream.XMLStreamException;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.mail.EmailException;
+
+import org.sbml.jsbml.ext.fbc.FBCConstants;
 import org.sbml.jsbml.KineticLaw;
 import org.sbml.jsbml.Reaction;
 import org.sbml.jsbml.SBMLDocument;
@@ -313,6 +315,7 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
 
           // Cargar modelo para cambiar LB
           SBMLDocument cdoc = SBMLReader.read(cmodelFile);
+          boolean isFBC = cdoc.isPackageEnabled(FBCConstants.shortLabel);
           for (Reaction r : cdoc.getModel().getListOfReactions()) {
             boolean generic = false;
 
@@ -330,10 +333,7 @@ public class MergeServiceImpl extends RemoteServiceServlet implements MergeServi
 
             if (generic) {
               if (!mmIdList.contains(r.getId())) {
-		KineticLaw kl = r.isSetKineticLaw() ? r.getKineticLaw() : r.createKineticLaw();
-		if(kl != null) {
-			kl.getLocalParameter(Util.LOCAL__LOWER_BOUND_PARAM).setValue(Util.DEFAULT_LOWER_BOUND_VALUE);
-		}
+		      Util.setDefaultLowerBoundValue(r,isFBC);
               }
             }
           }
